@@ -82,7 +82,7 @@ loader.load('/models/warlock.glb',function (gltf) {
         animationMap.set(a.name,mixer.clipAction(a))
     })
     scene.add(model)
-    player = new Player(model,mixer,animationMap,orbitControls,camera,'idle')
+    player = new Player(model,mixer,animationMap,'idle')
     }
 )
 
