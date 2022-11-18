@@ -1,30 +1,52 @@
 import * as THREE from 'three'
-import * as CANNON from 'cannon-es'
-import {Model } from './Model'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-export class Player extends Model{
-    private readonly fadeDuration: number = 0.2
-    private readonly runVelocity:number = .2
-    private readonly walkVelocity:number = .1
-    
+
+export class Player {
+
+    private model: THREE.Group
+    private mixer: THREE.AnimationMixer
+    private animationsMap: Map<string, THREE.AnimationAction> = new Map() // Walk, Run, Idle
+    private orbitControl: OrbitControls
+    private camera: THREE.Camera
+    // state
     private toggleRun: boolean = true
-   
+    private currentAction: string
+     // temporary data
+    private walkDirection = new THREE.Vector3()
+    private rotateAngle = new THREE.Vector3(0, 1, 0)
+    private rotateQuarternion: THREE.Quaternion = new THREE.Quaternion()
+    private cameraTarget = new THREE.Vector3()
+
+      // constants
+    private readonly fadeDuration: number = 0.2
+    private readonly runVelocity:number = .4
+    private readonly walkVelocity:number = .1
+
     constructor(model: THREE.Group, 
         mixer: THREE.AnimationMixer,  
         animationsMap: Map<string, THREE.AnimationAction>,
+        orbitControl: OrbitControls, 
         camera: THREE.Camera,
-        currentAction: string,
-        shape: CANNON.Trimesh,
-        body: CANNON.Body) {
-        
-        super(model,mixer,animationsMap,currentAction,shape,body)
+        currentAction: string) {
+        this.model = model
+        this.mixer = mixer
+        this.animationsMap = animationsMap
+        this.currentAction = currentAction
+        this.animationsMap.forEach((value, key) => {
+            if (key == currentAction) {
+                value.play()
+            }
+        })
+        this.orbitControl = orbitControl
+        this.camera = camera
     }
 
     public switchRunToggle() : void {
         this.toggleRun = !this.toggleRun
     }
 
-    
+
     public update(delta:number, keysPressed:any) : void{
         const directionPressed = ['w','a','s','d'].some(key => keysPressed[key] == true)
         let play = ''

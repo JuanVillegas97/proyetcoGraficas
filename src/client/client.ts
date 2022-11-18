@@ -3,9 +3,9 @@ import * as CANNON from 'cannon-es'
 import { Player } from './classes/Player'
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import CannonUtils from './utils/cannonUtils'
-import CannonDebugRenderer from './utils/cannonDebugRenderer'
+import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+
+
 //Scene
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0xa8def0);
@@ -67,12 +67,10 @@ planeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
 world.addBody(planeBody)
 
 
-//Player
-let player: Player
 
+let player: Player
 const loader = new GLTFLoader()
 loader.load('/models/warlock.glb',function (gltf) {
-    // Mesh
     const model = gltf.scene
     model.traverse(function(object: any){
         if(object.isMesh) object.castShadow = true
@@ -84,16 +82,14 @@ loader.load('/models/warlock.glb',function (gltf) {
         animationMap.set(a.name,mixer.clipAction(a))
     })
     scene.add(model)
-    // Body
-    const shape = CannonUtils.CreateTrimesh((model.children[0] as THREE.Mesh).geometry)
-    const body = new CANNON.Body({ mass: 1 })
-    body.addShape(shape)
-    world.addBody(body)
-    player = new Player(model,mixer,animationMap,camera,'idle',shape,body)
-})
+    player = new Player(model,mixer,animationMap,orbitControls,camera,'idle')
+    }
+)
 
-
-
+const clock = new THREE.Clock()
+let delta
+let w = false;
+const zSpeed = .4;
 
 const keysPressed  = { }
 window.addEventListener("keydown", (event) => {
@@ -108,13 +104,10 @@ document.addEventListener('keyup', (event) => {
     (keysPressed as any)[event.key.toLowerCase()] = false
 }, false)
 
-const cannonDebugRenderer = new CannonDebugRenderer(scene, world)
 
-const clock = new THREE.Clock()
 function animate() {
-    let delta = clock.getDelta()
+    delta = clock.getDelta()
     world.step(Math.min(delta, 0.1))
-    cannonDebugRenderer.update()
     if(player){
         player.update(delta,keysPressed)
     }
@@ -131,8 +124,6 @@ function animate() {
         cubeBody.quaternion.z,
         cubeBody.quaternion.w
     )
-
-
     orbitControls.update()
     renderer.render(scene, camera)
     requestAnimationFrame(animate)
@@ -145,8 +136,6 @@ animate()
 
 
 //Things forgotten by the hand of god
-
-
 
 // Lights
 function light() {
