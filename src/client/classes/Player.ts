@@ -10,10 +10,12 @@ export class Player extends Model{
     
     
 
-    constructor(model: THREE.Group, 
+    constructor(
+        model: THREE.Group, 
         mixer: THREE.AnimationMixer,  
         animationsMap: Map<string, THREE.AnimationAction>,
-        currentAction: string) {
+        currentAction: string
+        ){
         super(model,mixer,animationsMap,currentAction)
     }
 
@@ -61,7 +63,6 @@ export class Player extends Model{
                 this.model.position.z -= velocity
                 this.model.rotation.y = 3
             }
-            
         }
     }
 

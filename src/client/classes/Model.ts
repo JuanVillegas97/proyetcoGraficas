@@ -11,7 +11,8 @@ export class Model{
     // protected body: CANNON.Body
 
     
-    constructor(model: THREE.Group, 
+    constructor(
+        model: THREE.Group, 
         mixer: THREE.AnimationMixer,  
         animationsMap: Map<string, THREE.AnimationAction>,
         currentAction: string,

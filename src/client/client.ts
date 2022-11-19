@@ -3,9 +3,9 @@ import * as CANNON from 'cannon-es'
 import { Player } from './classes/Player'
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-
-
+import {  GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import CannonDebugRenderer from './utils/cannonDebugRenderer'
+import CannonUtils from './utils/cannonUtils'
 //Scene
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0xa8def0);
@@ -55,23 +55,14 @@ cubeBody.position.y = cubeMesh.position.y
 cubeBody.position.z = cubeMesh.position.z
 world.addBody(cubeBody)
 
-const planeGeometry = new THREE.PlaneGeometry(25, 25)
-const planeMesh = new THREE.Mesh(planeGeometry, phongMaterial)
-planeMesh.rotateX(-Math.PI / 2)
-planeMesh.receiveShadow = true
-scene.add(planeMesh)
-const planeShape = new CANNON.Plane()
-const planeBody = new CANNON.Body({ mass: 0 })
-planeBody.addShape(planeShape)
-planeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
-world.addBody(planeBody)
 
 
-
+//Player
 let player: Player
 const loader = new GLTFLoader()
 loader.load('/models/warlock.glb',function (gltf) {
     const model = gltf.scene
+    model.position.z = -1
     model.traverse(function(object: any){
         if(object.isMesh) object.castShadow = true
     })
@@ -86,10 +77,23 @@ loader.load('/models/warlock.glb',function (gltf) {
     }
 )
 
-const clock = new THREE.Clock()
-let delta
-let w = false;
-const zSpeed = .4;
+let grampa: Player
+loader.load('/models/grampa.glb',function (gltf) {
+    const model = gltf.scene
+    model.position.z = -1
+    model.traverse(function(object: any){
+        if(object.isMesh) object.castShadow = true
+    })
+    const gltfAnimations: THREE.AnimationClip[] = gltf.animations
+    const mixer = new THREE.AnimationMixer(model)
+    const animationMap: Map<string, THREE.AnimationAction> = new Map()
+    gltfAnimations.filter(a=> a.name != 'Armature.001|mixamo.com|Layer0').forEach((a:THREE.AnimationClip)=>{
+        animationMap.set(a.name,mixer.clipAction(a))
+    })
+    scene.add(model)
+    grampa = new Player(model,mixer,animationMap,'idle')
+    }
+)
 
 const keysPressed  = { }
 window.addEventListener("keydown", (event) => {
@@ -104,14 +108,86 @@ document.addEventListener('keyup', (event) => {
     (keysPressed as any)[event.key.toLowerCase()] = false
 }, false)
 
+// Water
+const textureLoader = new THREE.TextureLoader();
 
+const waterBaseColor = textureLoader.load("./textures/water/Water_002_COLOR.jpg");
+const waterNormalMap = textureLoader.load("./textures/water/Water_002_NORM.jpg");
+const waterHeightMap = textureLoader.load("./textures/water/Water_002_DISP.png");
+const waterRoughness = textureLoader.load("./textures/water/Water_002_ROUGH.jpg");
+const waterAmbientOcclusion = textureLoader.load("./textures/water/Water_002_OCC.jpg");
+
+const geometryWater = new THREE.PlaneGeometry(5, 10, 64, 64);
+const planeWater = new THREE.Mesh(geometryWater, 
+new THREE.MeshStandardMaterial({ 
+    map: waterBaseColor, 
+    normalMap: waterNormalMap, 
+    displacementMap: waterHeightMap, displacementScale: 0.01, 
+    roughnessMap: waterRoughness, roughness: 0, 
+    aoMap: waterAmbientOcclusion }));
+planeWater.receiveShadow = true;
+planeWater.castShadow = true;
+planeWater.rotation.x = - Math.PI / 2;
+planeWater.position.z = 0;
+planeWater.position.x = 7;
+planeWater.position.y = .5;
+scene.add(planeWater);
+
+const count: number = geometryWater.attributes.position.count;
+const damping = 0.25;
+
+// Soil
+const soilBaseColor = textureLoader.load("./textures/soil/Rock_Moss_001_basecolor.jpg");
+const soilNormalMap = textureLoader.load("./textures/soil/Rock_Moss_001_normal.jpg");
+const soilHeightMap = textureLoader.load("./textures/soil/Rock_Moss_001_height.png");
+const soilRoughness = textureLoader.load("./textures/soil/Rock_Moss_001_roughness.jpg");
+const soilAmbientOcclusion = textureLoader.load("./textures/soil/Rock_Moss_001_ambientOcclusion.jpg");
+
+const geometrySoil = new THREE.PlaneGeometry(25, 10,200,200)
+const planeSoil = new THREE.Mesh(geometrySoil, new THREE.MeshStandardMaterial({
+    map: soilBaseColor,
+    normalMap: soilNormalMap,
+    displacementMap: soilHeightMap, displacementScale: 2,
+    roughnessMap: soilRoughness, roughness: 0,
+    aoMap: soilAmbientOcclusion
+}));
+
+planeSoil.rotateX(-Math.PI / 2)
+planeSoil.receiveShadow = true;
+planeSoil.receiveShadow = true
+planeSoil.position.y = -1
+scene.add(planeSoil)
+const planeShape = new CANNON.Plane()
+const planeBody = new CANNON.Body({ mass: 0 })
+planeBody.addShape(planeShape)
+planeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
+world.addBody(planeBody)
+
+
+
+const cannonDebugRenderer = new CannonDebugRenderer(scene, world)
+const clock = new THREE.Clock()
 function animate() {
-    delta = clock.getDelta()
+    const delta = clock.getDelta()
     world.step(Math.min(delta, 0.1))
-    if(player){
-        player.update(delta,keysPressed)
-    }
     
+    // SINE WAVE
+    const now_slow = Date.now() / 400;
+    for (let i = 0; i < count; i++) {
+        const x = geometryWater.attributes.position.getX(i)
+        const y = geometryWater.attributes.position.getY(i)
+
+        const xangle = x + now_slow
+        const xsin = Math.sin(xangle) * damping
+        const yangle = y + now_slow
+        const ycos = Math.cos(yangle) * damping
+
+        geometryWater.attributes.position.setZ(i, xsin + ycos)
+    }
+    geometryWater.computeVertexNormals();
+    geometryWater.attributes.position.needsUpdate = true;
+
+
     // Copy coordinates from Cannon to Three.js
     cubeMesh.position.set(
         cubeBody.position.x,
@@ -124,6 +200,10 @@ function animate() {
         cubeBody.quaternion.z,
         cubeBody.quaternion.w
     )
+    if(player){
+        player.update(delta,keysPressed)
+    }
+    cannonDebugRenderer.update()
     orbitControls.update()
     renderer.render(scene, camera)
     requestAnimationFrame(animate)
