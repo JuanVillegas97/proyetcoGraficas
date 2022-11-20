@@ -29,7 +29,11 @@ world.gravity.set(0, -9.82, 0)
 const cannonDebugRenderer = new CannonDebugRenderer(scene, world)
 
 //Loading textures
-const textureLoader = new THREE.TextureLoader();
+const textureLoader = new THREE.TextureLoader()
+
+//GLTF Loader
+const loader = new GLTFLoader()
+
 
 // Contorls
 const orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -48,34 +52,30 @@ createPlane()
 
 //Player
 let player: Player
-const loader = new GLTFLoader()
 loader.load('/models/warlock.glb',function (gltf) {
     const model = gltf.scene
-    model.position.z = -1
-    model.traverse(function(object: any){
-        if(object.isMesh) object.castShadow = true
-    })
     const gltfAnimations: THREE.AnimationClip[] = gltf.animations
     const mixer = new THREE.AnimationMixer(model)
     const animationMap: Map<string, THREE.AnimationAction> = new Map()
     gltfAnimations.filter(a=> a.name != 'Armature.001|mixamo.com|Layer0').forEach((a:THREE.AnimationClip)=>{
         animationMap.set(a.name,mixer.clipAction(a))
     })
-    model.position.y = 3
-    console.log(model)
+
+    const shape =  new CANNON.Cylinder(1, 1, 4, 12)
+    const body = new CANNON.Body({ mass: 1, shape: shape})
+    body.position.y = 7
+    model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
     scene.add(model)
-    player = new Player(model,mixer,animationMap,'idle')
+    world.addBody(body)
+
+    player = new Player(model,mixer,animationMap,'idle',body)
     }
 )
-// const playerShape =  new CANNON.Cylinder(.5,.5,2,12)
-// const playerBody = new CANNON.Body({ mass: 1, type:1})
-// playerBody.addShape(playerShape)
-// playerBody.position.x = 0
-// playerBody.position.y = 3
-// playerBody.position.z = 0
 
 
-// world.addBody(playerBody)
+
+
+
 
 
 const clock = new THREE.Clock()
@@ -83,24 +83,7 @@ function animate() {
     const delta = clock.getDelta()
     world.step(Math.min(delta, 0.1))
 
-    if(player){
-        player.update(delta,keysPressed)
-        // player.getModel().position.set(
-        //     playerBody.position.x,
-        //     playerBody.position.y,
-        //     playerBody.position.z
-        // )
-        // player.getModel().quaternion.set(
-        //     playerBody.quaternion.x,
-        //     playerBody.quaternion.y,
-        //     playerBody.quaternion.z,
-        //     playerBody.quaternion.w
-        // )
-    
-    }
-
-    
-
+    player ? player.update(delta,keysPressed) : null
     cannonDebugRenderer.update()
     orbitControls.update()
     renderer.render(scene, camera)
@@ -135,9 +118,8 @@ function createPlane(){
     planeSoil.receiveShadow = true
     planeSoil.position.y = -1
     scene.add(planeSoil)
-    const groundMaterial = new CANNON.Material('groundMaterial')
     const planeShape = new CANNON.Plane()
-    const planeBody = new CANNON.Body({ mass: 0, shape: planeShape, material:groundMaterial})
+    const planeBody = new CANNON.Body({ mass: 0, shape: planeShape})
     planeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
     world.addBody(planeBody)
 

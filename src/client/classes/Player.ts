@@ -1,5 +1,6 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import * as CANNON from 'cannon-es'
+
 import { Model } from './Model'
 
 export class Player extends Model{
@@ -14,9 +15,10 @@ export class Player extends Model{
         model: THREE.Group, 
         mixer: THREE.AnimationMixer,  
         animationsMap: Map<string, THREE.AnimationAction>,
-        currentAction: string
+        currentAction: string,
+        body: CANNON.Body
         ){
-        super(model,mixer,animationsMap,currentAction)
+        super(model,mixer,animationsMap,currentAction,body)
     }
 
     public switchRunToggle() : void {
@@ -46,24 +48,28 @@ export class Player extends Model{
         if (this.currentAction == 'run.001' || this.currentAction == 'walk') {
             const velocity = this.currentAction == 'run.001' ? this.runVelocity : this.walkVelocity
             if(keysPressed.d==true){
-                this.model.position.x += velocity
+                this.body.position.x += velocity
                 this.model.rotation.y = 1.5
             }
             if(keysPressed.a==true){
-                this.model.position.x -= velocity
+                this.body.position.x -= velocity
                 this.model.rotation.y = -1.5
 
             }
             if(keysPressed.s==true){
-                this.model.position.z += velocity
+                this.body.position.z += velocity
                 this.model.rotation.y = 0
 
             }
             if(keysPressed.w==true){
-                this.model.position.z -= velocity
+                this.body.position.z -= velocity
                 this.model.rotation.y = 3
             }
         }
+        this.model.position.set( 
+            this.body.position.x,
+            this.body.position.y-2,
+            this.body.position.z)
     }
 
 }

@@ -1,14 +1,12 @@
 import * as THREE from 'three'
-// import * as CANNON from 'cannon-es'
+import * as CANNON from 'cannon-es'
 
 export class Model{
     protected model: THREE.Group
     protected mixer: THREE.AnimationMixer
     protected animationsMap: Map<string, THREE.AnimationAction> = new Map()
     protected currentAction: string
-
-    // protected shape: CANNON.Trimesh
-    // protected body: CANNON.Body
+    protected body: CANNON.Body
 
     
     constructor(
@@ -16,8 +14,7 @@ export class Model{
         mixer: THREE.AnimationMixer,  
         animationsMap: Map<string, THREE.AnimationAction>,
         currentAction: string,
-        // shape: CANNON.Trimesh,
-        // body: CANNON.Body
+        body: CANNON.Body
         ){
         this.model = model
         this.mixer = mixer
@@ -28,8 +25,7 @@ export class Model{
                 value.play()
             }
         })
-        // this.shape = shape
-        // this.body = body
+        this.body = body
     }
 
     public getModel(): THREE.Group{
