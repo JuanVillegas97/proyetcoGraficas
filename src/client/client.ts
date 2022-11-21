@@ -44,44 +44,25 @@ orbitControls.enablePan = false
 orbitControls.maxPolarAngle = Math.PI / 2 - 0.05
 orbitControls.update();
 
-//Light
-light()
 
-// Plane
-createPlane()
+light() //Light
+createPlane() // Plane
 
-//Player
-let player: Player
-loader.load('/models/warlock.glb',function (gltf) {
-    const model = gltf.scene
-    const gltfAnimations: THREE.AnimationClip[] = gltf.animations
-    const mixer = new THREE.AnimationMixer(model)
-    const animationMap: Map<string, THREE.AnimationAction> = new Map()
-    gltfAnimations.filter(a=> a.name != 'Armature.001|mixamo.com|Layer0').forEach((a:THREE.AnimationClip)=>{
-        animationMap.set(a.name,mixer.clipAction(a))
-    })
+let player : Player = createPlayer() //Player
 
-    const shape =  new CANNON.Cylinder(1, 1, 4, 12)
-    const body = new CANNON.Body({ mass: 1, shape: shape})
-    body.position.y = 7
-    model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
-    scene.add(model)
-    world.addBody(body)
-
-    player = new Player(model,mixer,animationMap,'idle',body)
-    }
+const enemyCube = new THREE.Mesh(
+    new THREE.BoxGeometry(2,2,2),
+    new THREE.MeshPhongMaterial({color: 0x33333})
 )
-
-
-
-
-
+enemyCube.position.set(7,1,0)
+scene.add(enemyCube)
 
 
 const clock = new THREE.Clock()
-function animate() {
+function animate() : void {
     const delta = clock.getDelta()
     world.step(Math.min(delta, 0.1))
+    // checkForTarget()
 
     player ? player.update(delta,keysPressed) : null
     cannonDebugRenderer.update()
@@ -89,15 +70,35 @@ function animate() {
     renderer.render(scene, camera)
     requestAnimationFrame(animate)
 }
-
-
-
 animate()
 
 //Things forgotten by the hand of god
 
+// Player
+function createPlayer() : Player {
+    loader.load('/models/warlock.glb',function (gltf) {
+        const model = gltf.scene
+        const gltfAnimations: THREE.AnimationClip[] = gltf.animations
+        const mixer = new THREE.AnimationMixer(model)
+        const animationMap: Map<string, THREE.AnimationAction> = new Map()
+        gltfAnimations.filter(a=> a.name != 'Armature.001|mixamo.com|Layer0').forEach((a:THREE.AnimationClip)=>{
+            animationMap.set(a.name,mixer.clipAction(a))
+        })
+        const shape =  new CANNON.Cylinder(1, 1, 4, 12)
+        const body = new CANNON.Body({ mass: 1, shape: shape})
+        body.position.y = 7
+        model.name = 'Warlock'
+        model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
+        scene.add(model)
+        world.addBody(body)
+        player = new Player(model,mixer,animationMap,'idle',body)
+        }
+    )
+    return player
+}
+
 // Plane
-function createPlane(){
+function createPlane() : void {
     const soilBaseColor = textureLoader.load("./textures/soil/Rock_Moss_001_basecolor.jpg");
     const soilNormalMap = textureLoader.load("./textures/soil/Rock_Moss_001_normal.jpg");
     const soilHeightMap = textureLoader.load("./textures/soil/Rock_Moss_001_height.png");
@@ -126,7 +127,7 @@ function createPlane(){
 }
 
 // Lights
-function light() {
+function light() : void {
     scene.add(new THREE.AmbientLight(0xffffff, 0.7))
     const dirLight = new THREE.DirectionalLight(0xffffff, 1)
     dirLight.position.set(- 60, 100, - 10);
@@ -144,7 +145,7 @@ function light() {
 }
 
 // Resize handler
-function onWindowResize() {
+function onWindowResize() : void {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth, window.innerHeight)
@@ -165,48 +166,10 @@ window.addEventListener("keydown", (event) => {
 document.addEventListener('keyup', (event) => {
     (keysPressed as any)[event.key.toLowerCase()] = false
 }, false)
+window.addEventListener('mousedown',(e)=>{
+    setTimeout(function() {
+        console.log('hi')
 
+      }, 500);
+})
 
-
-// Water
-
-// const waterBaseColor = textureLoader.load("./textures/water/Water_002_COLOR.jpg");
-// const waterNormalMap = textureLoader.load("./textures/water/Water_002_NORM.jpg");
-// const waterHeightMap = textureLoader.load("./textures/water/Water_002_DISP.png");
-// const waterRoughness = textureLoader.load("./textures/water/Water_002_ROUGH.jpg");
-// const waterAmbientOcclusion = textureLoader.load("./textures/water/Water_002_OCC.jpg");
-
-// const geometryWater = new THREE.PlaneGeometry(5, 10, 64, 64);
-// const planeWater = new THREE.Mesh(geometryWater, 
-// new THREE.MeshStandardMaterial({ 
-//     map: waterBaseColor, 
-//     normalMap: waterNormalMap, 
-//     displacementMap: waterHeightMap, displacementScale: 0.01, 
-//     roughnessMap: waterRoughness, roughness: 0, 
-//     aoMap: waterAmbientOcclusion }));
-// planeWater.receiveShadow = true;
-// planeWater.castShadow = true;
-// planeWater.rotation.x = - Math.PI / 2;
-// planeWater.position.z = 0;
-// planeWater.position.x = 7;
-// planeWater.position.y = .5;
-// scene.add(planeWater);
-
-// const count: number = geometryWater.attributes.position.count;
-// const damping = 0.25;
-
-    // SINE WAVE
-    // const now_slow = Date.now() / 400;
-    // for (let i = 0; i < count; i++) {
-    //     const x = geometryWater.attributes.position.getX(i)
-    //     const y = geometryWater.attributes.position.getY(i)
-
-    //     const xangle = x + now_slow
-    //     const xsin = Math.sin(xangle) * damping
-    //     const yangle = y + now_slow
-    //     const ycos = Math.cos(yangle) * damping
-
-    //     geometryWater.attributes.position.setZ(i, xsin + ycos)
-    // }
-    // geometryWater.computeVertexNormals();
-    // geometryWater.attributes.position.needsUpdate = true;

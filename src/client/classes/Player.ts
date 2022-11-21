@@ -4,10 +4,12 @@ import * as CANNON from 'cannon-es'
 import { Model } from './Model'
 
 export class Player extends Model{
-    private readonly fadeDuration: number = 0.2
+    private readonly name: string = "Warlock"
+    private readonly fadeDuration: number = .2
     private readonly runVelocity:number = .4
     private readonly walkVelocity:number = .1
     private toggleRun: boolean = true
+    private shooting: boolean = false
     
     
 
@@ -22,6 +24,10 @@ export class Player extends Model{
     }
 
     public switchRunToggle() : void {
+        this.toggleRun = !this.toggleRun
+    }
+
+    public switchShooting() : void {
         this.toggleRun = !this.toggleRun
     }
 
