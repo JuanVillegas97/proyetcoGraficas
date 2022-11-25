@@ -1,43 +1,22 @@
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
-
-// import "reset-css";
-// @ts-ignore
-// import Nebula, { SpriteRenderer } from "three-nebula";
-// import getThreeApp from "./three-app";
-// import json from "./my-particle-system.json";
-
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import {  GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { Player } from './classes/Player'
-
-
-
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
-import CannonUtils from './utils/cannonUtils'
-import { Object3D } from 'three'
+import getThreeApp from "./classes/App";
 
-//Scene
-const scene = new THREE.Scene()
-scene.background = new THREE.Color(0xa8def0);
+// @ts-ignore
+import Nebula, { SpriteRenderer } from 'three-nebula'
+// @ts-ignore
+import json from "./particles/blue.json"
 
-//Camera
-const camera = new THREE.PerspectiveCamera(75,window.innerWidth / window.innerHeight,0.1,1000)
-camera.position.set(0, 2, 10)
 
-//Renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true })
-renderer.setSize(window.innerWidth, window.innerHeight)
-renderer.setPixelRatio(window.devicePixelRatio)
-document.body.appendChild(renderer.domElement)
-renderer.shadowMap.enabled = true
-
-//World
-const world = new CANNON.World()
-world.gravity.set(0, -9.82, 0)
+// Scene, camera, renderer, world
+const app = getThreeApp()
 
 // Cannon debugger
-const cannonDebugRenderer = new CannonDebugRenderer(scene, world)
+const cannonDebugRenderer = new CannonDebugRenderer(app.scene, app.world)
 
 //Loading textures
 const textureLoader = new THREE.TextureLoader()
@@ -47,20 +26,20 @@ const loader = new GLTFLoader()
 
 
 // Contorls
-const orbitControls = new OrbitControls(camera, renderer.domElement);
+const orbitControls = new OrbitControls(app.camera, app.renderer.domElement);
 orbitControls.enableDamping = true
 orbitControls.minDistance = 5
 orbitControls.maxDistance = 15
 orbitControls.enablePan = false
 orbitControls.maxPolarAngle = Math.PI / 2 - 0.05
-orbitControls.update();
+orbitControls.update()
 
 
 let player : Player = createPlayer() //Player
 const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
-light() //Light
-createPlane() // Plane
+initLight() 
+initPlane() 
 initLeaves()
 
 // const enemeyCube = new THREE.Mesh(
@@ -70,20 +49,26 @@ initLeaves()
 // enemeyCube.position.set(1,2,2)
 // scene.add(enemeyCube)
 
-
+let nebula: any
+Nebula.fromJSONAsync(json, THREE).then((loaded:any) => {
+    const nebulaRenderer = new SpriteRenderer(app.scene, THREE)
+    nebula = loaded.addRenderer(nebulaRenderer);
+});
 
 
 const clock = new THREE.Clock()
 function animate() : void {
     
     const delta = clock.getDelta()
-    world.step(Math.min(delta, 0.1))
+    app.world.step(Math.min(delta, 0.1))
 	leavesMaterial.uniforms.time.value = clock.getElapsedTime();
     leavesMaterial.uniformsNeedUpdate = true;
     player ? player.update(delta,keysPressed) : null
+    nebula ? nebula.update() : null
+
     cannonDebugRenderer.update()
     orbitControls.update()
-    renderer.render(scene, camera)
+    app.renderer.render(app.scene, app.camera)
     requestAnimationFrame(animate)
 }
 animate()
@@ -105,8 +90,8 @@ function createPlayer() : Player {
         body.position.y = 7
         model.name = 'Warlock'
         model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
-        scene.add(model)
-        world.addBody(body)
+        app.scene.add(model)
+        app.world.addBody(body)
         player = new Player(model,mixer,animationMap,'idle',body)
         }
     )
@@ -114,7 +99,7 @@ function createPlayer() : Player {
 }
 
 // Plane
-function createPlane() : void {
+function initPlane() : void {
     const soilBaseColor = textureLoader.load("./textures/soil/Rock_Moss_001_basecolor.jpg");
     const soilNormalMap = textureLoader.load("./textures/soil/Rock_Moss_001_normal.jpg");
     const soilHeightMap = textureLoader.load("./textures/soil/Rock_Moss_001_height.png");
@@ -134,17 +119,17 @@ function createPlane() : void {
     planeSoil.receiveShadow = true;
     planeSoil.receiveShadow = true
     planeSoil.position.y = -1
-    scene.add(planeSoil)
+    app.scene.add(planeSoil)
     const planeShape = new CANNON.Plane()
     const planeBody = new CANNON.Body({ mass: 0, shape: planeShape})
     planeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
-    world.addBody(planeBody)
+    app.world.addBody(planeBody)
 
 }
 
 // Lights
-function light() : void {
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7))
+function initLight() : void {
+    app.scene.add(new THREE.AmbientLight(0xffffff, 0.7))
     const dirLight = new THREE.DirectionalLight(0xffffff, 1)
     dirLight.position.set(- 60, 100, - 10);
     dirLight.castShadow = true;
@@ -156,7 +141,7 @@ function light() : void {
     dirLight.shadow.camera.far = 200;
     dirLight.shadow.mapSize.width = 4096;
     dirLight.shadow.mapSize.height = 4096;
-    scene.add(dirLight);
+    app.scene.add(dirLight);
     // scene.add( new THREE.CameraHelper(dirLight.shadow.camera))
 }
 
@@ -227,7 +212,7 @@ function initLeaves(){
     const geometry = new THREE.PlaneGeometry( 0.1, 1, 1, 4 );
     geometry.translate( 0, 0.5, 0 ); // move grass blade geometry lowest point at 0.
     const instancedMesh = new THREE.InstancedMesh( geometry, leavesMaterial, 5000 );
-    scene.add( instancedMesh );
+    app.scene.add( instancedMesh );
     for ( let i=0 ; i<5000 ; i++ ) {
         dummy.position.set(
         ( Math.random() - 0.5 ) * 10,
@@ -247,10 +232,10 @@ function initLeaves(){
 
 // Resize handler
 function onWindowResize() : void {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.render(scene, camera)
+    app.camera.aspect = window.innerWidth / window.innerHeight
+    app.camera.updateProjectionMatrix()
+    app.renderer.setSize(window.innerWidth, window.innerHeight)
+    app.renderer.render(app.scene, app.camera)
 }
 window.addEventListener('resize', onWindowResize, false)
 

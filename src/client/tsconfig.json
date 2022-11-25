@@ -1,7 +1,10 @@
 {
     "compilerOptions": {
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
         "moduleResolution": "node",
         "strict": true
     },
-    "include": ["**/*.ts"]
+    "include": ["**/*.ts","**/*.json"]
 }
