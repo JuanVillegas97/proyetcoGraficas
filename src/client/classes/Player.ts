@@ -4,7 +4,6 @@ import * as CANNON from 'cannon-es'
 import { Model } from './Model'
 
 export class Player extends Model{
-    private readonly name: string = "Warlock"
     private readonly fadeDuration: number = .2
     private readonly runVelocity:number = .4
     private readonly walkVelocity:number = .1
@@ -72,10 +71,7 @@ export class Player extends Model{
                 this.model.rotation.y = 3
             }
         }
-        this.model.position.set( 
-            this.body.position.x,
-            this.body.position.y-2,
-            this.body.position.z)
+        this.model.position.set(this.body.position.x,this.body.position.y-2,this.body.position.z)
     }
 
 }

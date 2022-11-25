@@ -1,11 +1,22 @@
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
-import { Player } from './classes/Player'
+
+// import "reset-css";
+// @ts-ignore
+// import Nebula, { SpriteRenderer } from "three-nebula";
+// import getThreeApp from "./three-app";
+// import json from "./my-particle-system.json";
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import {  GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { Player } from './classes/Player'
+
+
+
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
 import CannonUtils from './utils/cannonUtils'
+import { Object3D } from 'three'
+
 //Scene
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0xa8def0);
@@ -45,25 +56,30 @@ orbitControls.maxPolarAngle = Math.PI / 2 - 0.05
 orbitControls.update();
 
 
+let player : Player = createPlayer() //Player
+const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
+
 light() //Light
 createPlane() // Plane
+initLeaves()
 
-let player : Player = createPlayer() //Player
+// const enemeyCube = new THREE.Mesh(
+//     new THREE.BoxGeometry(2,2,2),
+//     new THREE.MeshPhongMaterial({color:0x333333})
+// )
+// enemeyCube.position.set(1,2,2)
+// scene.add(enemeyCube)
 
-const enemyCube = new THREE.Mesh(
-    new THREE.BoxGeometry(2,2,2),
-    new THREE.MeshPhongMaterial({color: 0x33333})
-)
-enemyCube.position.set(7,1,0)
-scene.add(enemyCube)
+
 
 
 const clock = new THREE.Clock()
 function animate() : void {
+    
     const delta = clock.getDelta()
     world.step(Math.min(delta, 0.1))
-    // checkForTarget()
-
+	leavesMaterial.uniforms.time.value = clock.getElapsedTime();
+    leavesMaterial.uniformsNeedUpdate = true;
     player ? player.update(delta,keysPressed) : null
     cannonDebugRenderer.update()
     orbitControls.update()
@@ -84,7 +100,7 @@ function createPlayer() : Player {
         gltfAnimations.filter(a=> a.name != 'Armature.001|mixamo.com|Layer0').forEach((a:THREE.AnimationClip)=>{
             animationMap.set(a.name,mixer.clipAction(a))
         })
-        const shape =  new CANNON.Cylinder(1, 1, 4, 12)
+        const shape =  new CANNON.Cylinder(.5, 1, 4, 12)
         const body = new CANNON.Body({ mass: 1, shape: shape})
         body.position.y = 7
         model.name = 'Warlock'
@@ -144,6 +160,91 @@ function light() : void {
     // scene.add( new THREE.CameraHelper(dirLight.shadow.camera))
 }
 
+//Leaves
+
+function shaderLeaves(){
+    const simpleNoise = `
+    float N (vec2 st) { // https://thebookofshaders.com/10/
+        return fract( sin( dot( st.xy, vec2(12.9898,78.233 ) ) ) *  43758.5453123);
+    }
+    float smoothNoise( vec2 ip ){ // https://www.youtube.com/watch?v=zXsWftRdsvU
+    vec2 lv = fract( ip );
+    vec2 id = floor( ip );
+    lv = lv * lv * ( 3. - 2. * lv );
+    float bl = N( id );
+    float br = N( id + vec2( 1, 0 ));
+    float b = mix( bl, br, lv.x );
+    float tl = N( id + vec2( 0, 1 ));
+    float tr = N( id + vec2( 1, 1 ));
+    float t = mix( tl, tr, lv.x );
+    return mix( b, t, lv.y );
+    }`;
+    const vertexShader = `
+    varying vec2 vUv;
+    uniform float time;
+    ${simpleNoise}
+    void main() {
+    vUv = uv;
+    float t = time * 2.;
+    // VERTEX POSITION
+    vec4 mvPosition = vec4( position, 1.0 );
+    #ifdef USE_INSTANCING
+    mvPosition = instanceMatrix * mvPosition;
+    #endif
+    // DISPLACEMENT
+    float noise = smoothNoise(mvPosition.xz * 0.5 + vec2(0., t));
+    noise = pow(noise * 0.5 + 0.5, 2.) * 2.;
+    // here the displacement is made stronger on the blades tips.
+    float dispPower = 1. - cos( uv.y * 3.1416 * 0.5 );
+    float displacement = noise * ( 0.3 * dispPower );
+    mvPosition.z -= displacement;
+    //
+    vec4 modelViewPosition = modelViewMatrix * mvPosition;
+    gl_Position = projectionMatrix * modelViewPosition;
+	}
+`;
+    const fragmentShader = `
+    varying vec2 vUv;
+    
+    void main() {
+        vec3 baseColor = vec3( 0.41, 1.0, 0.5 );
+        float clarity = ( vUv.y * 0.875 ) + 0.125;
+        gl_FragColor = vec4( baseColor * clarity, 1 );
+    }
+`;
+    const uniforms = {time: {value: 0}}
+    return new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms,
+    side: THREE.DoubleSide
+    });
+}
+
+// Init leaves
+function initLeaves(){
+    const dummy = new THREE.Object3D();
+    const geometry = new THREE.PlaneGeometry( 0.1, 1, 1, 4 );
+    geometry.translate( 0, 0.5, 0 ); // move grass blade geometry lowest point at 0.
+    const instancedMesh = new THREE.InstancedMesh( geometry, leavesMaterial, 5000 );
+    scene.add( instancedMesh );
+    for ( let i=0 ; i<5000 ; i++ ) {
+        dummy.position.set(
+        ( Math.random() - 0.5 ) * 10,
+        0,
+        ( Math.random() - 0.5 ) * 10
+    );
+    
+    dummy.scale.setScalar( 0.5 + Math.random() * 0.5 );
+    
+    dummy.rotation.y = Math.random() * Math.PI;
+    
+    dummy.updateMatrix();
+    instancedMesh.setMatrixAt( i, dummy.matrix );
+
+    }
+}
+
 // Resize handler
 function onWindowResize() : void {
     camera.aspect = window.innerWidth / window.innerHeight
@@ -166,10 +267,10 @@ window.addEventListener("keydown", (event) => {
 document.addEventListener('keyup', (event) => {
     (keysPressed as any)[event.key.toLowerCase()] = false
 }, false)
-window.addEventListener('mousedown',(e)=>{
-    setTimeout(function() {
-        console.log('hi')
+// window.addEventListener('mousedown',(e)=>{
+//     setTimeout(function() {
+//         console.log('hi')
 
-      }, 500);
-})
+//       }, 500);
+// })
 
