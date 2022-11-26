@@ -11,6 +11,7 @@ export class Player extends Model{
     private shooting: boolean = false
     
     
+    
 
     constructor(
         model: THREE.Group, 
