@@ -20,6 +20,5 @@ export default () => {
     world = new World()
     world.gravity.set(0, -9.82, 0)
 
-    
     return { scene, camera, renderer, world }
 };

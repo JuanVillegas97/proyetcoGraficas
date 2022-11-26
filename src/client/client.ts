@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import {  GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { Player } from './classes/Player'
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
-import getThreeApp from "./classes/App";
+import getThreeApp from "./classes/App"
 
 // @ts-ignore
 import Nebula, { SpriteRenderer } from 'three-nebula'
@@ -36,11 +36,13 @@ orbitControls.update()
 
 
 let player : Player = createPlayer() //Player
+let nebula : any
 const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
+initNebula()
 initLight() 
 initPlane() 
-initLeaves()
+// initLeaves()
 
 // const enemeyCube = new THREE.Mesh(
 //     new THREE.BoxGeometry(2,2,2),
@@ -48,12 +50,18 @@ initLeaves()
 // )
 // enemeyCube.position.set(1,2,2)
 // scene.add(enemeyCube)
+let bulletGeo = new THREE.SphereGeometry(0.2);
+const bulletMaterial = new THREE.MeshBasicMaterial( { color: 0x005ce6 } );
+let bullets = [];
+let bulletIndex = 0;
+for ( let i = 0; i < 100; ++i ){
+const bulletMesh = new THREE.Mesh( bulletGeo, bulletMaterial )
+bullets[i] = bulletMesh;
+bulletMesh.visible = false
+bulletMesh.userData = new THREE.Vector3();  // this is the velocity vector!
+app.scene.add( bulletMesh )
+}
 
-let nebula: any
-Nebula.fromJSONAsync(json, THREE).then((loaded:any) => {
-    const nebulaRenderer = new SpriteRenderer(app.scene, THREE)
-    nebula = loaded.addRenderer(nebulaRenderer);
-});
 
 
 const clock = new THREE.Clock()
@@ -61,8 +69,8 @@ function animate() : void {
     
     const delta = clock.getDelta()
     app.world.step(Math.min(delta, 0.1))
-	leavesMaterial.uniforms.time.value = clock.getElapsedTime();
-    leavesMaterial.uniformsNeedUpdate = true;
+	leavesMaterial.uniforms.time.value = clock.getElapsedTime()
+    leavesMaterial.uniformsNeedUpdate = true
     player ? player.update(delta,keysPressed) : null
     nebula ? nebula.update() : null
 
@@ -98,6 +106,18 @@ function createPlayer() : Player {
     return player
 }
 
+// Nebula
+function initNebula() : void {
+    Nebula.fromJSONAsync(json, THREE).then((loaded:any) => {
+        const nebulaRenderer = new SpriteRenderer(app.scene, THREE)
+        loaded.emitters.forEach((a:any) => {
+            a.position.y = 4
+            
+        })
+        nebula = loaded.addRenderer(nebulaRenderer);
+    })
+    
+}
 // Plane
 function initPlane() : void {
     const soilBaseColor = textureLoader.load("./textures/soil/Rock_Moss_001_basecolor.jpg");
