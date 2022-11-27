@@ -45,8 +45,8 @@ initPlayer()
 initSky()
 initLight() 
 initPlane() 
-const balls = []
-const ballMeshes = []
+const balls : CANNON.Body[]= []
+const ballMeshes : THREE.Mesh[] = []
 const shootVelocity = 15
 const ballShape = new CANNON.Sphere(0.2)
 const ballGeometry = new THREE.SphereGeometry(0.2)
@@ -87,7 +87,7 @@ window.addEventListener('click', (event) => {
     ballBody.position.set(x, y, z)
 
     ballMesh.position.set(ballBody.position.x,ballBody.position.y,ballBody.position.z)
-  })
+})
 
 
 
@@ -100,16 +100,16 @@ function animate() : void {
 	leavesMaterial.uniforms.time.value = clock.getElapsedTime()
     leavesMaterial.uniformsNeedUpdate = true
 
-    // for (let i = 0; i < balls.length; i++) {
-    //     ballMeshes[i].position.copy(balls[i].position)
-    //     ballMeshes[i].quaternion.copy(balls[i].quaternion)
-    //   }
+    for (let i = 0; i < balls.length; i++) {
+        ballMeshes[i].position.set(balls[i].position.x,balls[i].position.y,balls[i].position.z)
+        ballMeshes[i].quaternion.set(balls[i].quaternion.x,balls[i].quaternion.y,balls[i].quaternion.z,balls[i].quaternion.w)
+      }
 
     player ? player.update(delta,keysPressed) : null
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
 
-    cannonDebugRenderer.update()
+    // cannonDebugRenderer.update()
 
     skyboxMesh.position.copy( app.camera.position );
     app.renderer.render(app.scene, app.camera)
