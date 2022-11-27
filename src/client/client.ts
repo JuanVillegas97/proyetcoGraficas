@@ -39,10 +39,11 @@ let player : Player = createPlayer() //Player
 let nebula : any
 const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
-initNebula()
+
 initLight() 
 initPlane() 
 // initLeaves()
+// initNebula()
 
 // const enemeyCube = new THREE.Mesh(
 //     new THREE.BoxGeometry(2,2,2),
@@ -51,51 +52,7 @@ initPlane()
 // enemeyCube.position.set(1,2,2)
 // scene.add(enemeyCube)
 
-let bulletGeo = new THREE.SphereGeometry(0.2);
-const bulletMaterial = new THREE.MeshBasicMaterial( { color: 0x005ce6 } );
-let bullets = [];
-let bulletIndex = 0;
 
-for ( let i = 0; i < 100; ++i ){
-const bulletMesh = new THREE.Mesh( bulletGeo, bulletMaterial )
-bullets[i] = bulletMesh;
-bulletMesh.visible = false
-bulletMesh.userData = new THREE.Vector3();  // this is the velocity vector!
-app.scene.add( bulletMesh )
-}
-
-// function shootBullet(controls, shootingObject)
-//     {
-//         let bulletMesh = this.bullets[this.bulletIndex++];
-        
-//         if (this.bulletIndex>=this.bullets.length)
-//         {
-//             this.bulletIndex = 0;
-//         }
-    
-//         bulletMesh.visible = true;
-    
-//         let xAxis=new THREE.Vector3();
-//         let yAxis=new THREE.Vector3();
-//         let zAxis=new THREE.Vector3();
-//         shootingObject.matrix.extractBasis(xAxis,yAxis,zAxis);
-    
-//         bulletMesh.position.copy( shootingObject.position );
-//         //bulletMesh.position.addScaledVector( zAxis.normalize(), 1 );
-//         //bulletMesh.position.addScaledVector( yAxis.normalize(), 0 );
-//         bulletMesh.position.addScaledVector( xAxis.normalize(), 3 );
-        
-//         xAxis.y+=.025-.05*Math.random();
-//         xAxis.x+=.05-.1*Math.random();
-//         xAxis.z+=.05-.1*Math.random();
-//         xAxis.normalize();
-    
-//         let bulletVelocity = bulletMesh.userData;
-//         // bulletVelocity.copy(xAxis.normalize());
-//         // bulletVelocity.addScaledVector( xAxis.normalize(), 0.8 + -0.2 + 0.4*Math.random());
-//         bulletVelocity.copy(xAxis);
-//         bulletVelocity.addScaledVector( xAxis, 2 + -0.6 + 1.2*Math.random());
-//     }
 
 const clock = new THREE.Clock()
 function animate() : void {
@@ -126,14 +83,20 @@ function createPlayer() : Player {
         gltfAnimations.filter(a=> a.name != 'Armature.001|mixamo.com|Layer0').forEach((a:THREE.AnimationClip)=>{
             animationMap.set(a.name,mixer.clipAction(a))
         })
-        const shape =  new CANNON.Cylinder(.5, 1, 4, 12)
-        const body = new CANNON.Body({ mass: 1, shape: shape})
+
+        const body = new CANNON.Body({ mass: 1, shape: new CANNON.Cylinder(.5, 1, 4, 12)})
         body.position.y = 7
         model.name = 'Warlock'
         model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
         app.scene.add(model)
         app.world.addBody(body)
         player = new Player(model,mixer,animationMap,'idle',body)
+
+        player.bullets.forEach(bullet => {
+            bullet.body.position.y = 3
+            app.scene.add(bullet.shape)
+            app.world.addBody(bullet.body)
+        })
         }
     )
     return player
