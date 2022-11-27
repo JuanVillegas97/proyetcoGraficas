@@ -5,6 +5,7 @@ import {  GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { Player } from './classes/Player'
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
 import getThreeApp from "./classes/App"
+import { MySkybox } from './classes/MySkybox'
 
 // @ts-ignore
 import Nebula, { SpriteRenderer } from 'three-nebula'
@@ -15,6 +16,8 @@ import json from "./particles/blue.json"
 // Scene, camera, renderer, world
 const app = getThreeApp()
 
+//Skybox
+let mySkybox = new MySkybox( app.scene );
 // Cannon debugger
 const cannonDebugRenderer = new CannonDebugRenderer(app.scene, app.world)
 
@@ -66,6 +69,7 @@ function animate() : void {
 
     cannonDebugRenderer.update()
     orbitControls.update()
+    mySkybox.update( app.camera );
     app.renderer.render(app.scene, app.camera)
     requestAnimationFrame(animate)
 }

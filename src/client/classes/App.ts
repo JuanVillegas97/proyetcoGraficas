@@ -6,7 +6,7 @@ export let camera : THREE.PerspectiveCamera
 export let renderer : THREE.WebGLRenderer
 export let world : World
 export default () => {
-    camera = new PerspectiveCamera(75,window.innerWidth / window.innerHeight,0.1,1000)
+    camera = new PerspectiveCamera(75,window.innerWidth / window.innerHeight,0.1,2000)
     camera.position.set(0, 2, 10)
 
     scene = new Scene()
@@ -17,7 +17,7 @@ export default () => {
     renderer.setPixelRatio(window.devicePixelRatio)
     document.body.appendChild(renderer.domElement)
     renderer.shadowMap.enabled = true
-    renderer.setClearColor( 0xffffff, 0);
+    // renderer.setClearColor( 0xffffff, 0);
     world = new World()
     world.gravity.set(0, -9.82, 0)
 
