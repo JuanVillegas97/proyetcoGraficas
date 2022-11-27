@@ -92,7 +92,7 @@ function createPlayer() : Player {
         app.world.addBody(body)
         player = new Player(model,mixer,animationMap,'idle',body)
 
-        player.bullets.forEach(bullet => {
+        player.getBullets().forEach(bullet => {
             bullet.body.position.y = 3
             app.scene.add(bullet.shape)
             app.world.addBody(bullet.body)
