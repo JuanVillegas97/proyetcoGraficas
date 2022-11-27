@@ -45,7 +45,6 @@ initPlayer()
 initSky()
 initLight() 
 initPlane() 
-
 const balls = []
 const ballMeshes = []
 const shootVelocity = 15
