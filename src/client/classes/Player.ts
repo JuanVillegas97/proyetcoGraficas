@@ -13,6 +13,7 @@ export class Player extends Model{
     private readonly walkVelocity:number = .1
     private toggleRun: boolean = true
     private isShooting: boolean = false
+
     private bullets : bullet[]  = new Array(100).fill({
         shape: new THREE.Mesh( new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({ color: 0x005ce6 })),
         body: new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.2)}),
@@ -68,7 +69,7 @@ export class Player extends Model{
             x+=.0002-.0004*Math.random()
 
             body.velocity.set(x*15,y,z)
-            body.position.set(shootingObject.position.y+3,shootingObject.position.x+3,shootingObject.position.z)
+            body.position.set(shootingObject.position.x+3,shootingObject.position.y+3,shootingObject.position.z)
 
             // let mynew = new THREE.Vector3(body.position.x,body.position.y,body.position.z)
             // let bulletMesh = this.bullets[this.bulletIndex].shape 

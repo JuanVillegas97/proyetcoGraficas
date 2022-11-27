@@ -3,9 +3,9 @@ import * as CANNON from 'cannon-es'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import {  GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { Player } from './classes/Player'
+import { DragonPatron } from './classes/DragonPatron'
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
 import getThreeApp from "./classes/App"
-import { MySkybox } from './classes/MySkybox'
 
 // @ts-ignore
 import Nebula, { SpriteRenderer } from 'three-nebula'
@@ -13,11 +13,10 @@ import Nebula, { SpriteRenderer } from 'three-nebula'
 import json from "./particles/blue.json"
 
 
+
 // Scene, camera, renderer, world
 const app = getThreeApp()
 
-//Skybox
-let mySkybox = new MySkybox( app.scene );
 // Cannon debugger
 const cannonDebugRenderer = new CannonDebugRenderer(app.scene, app.world)
 
@@ -38,15 +37,22 @@ orbitControls.maxPolarAngle = Math.PI / 2 - 0.05
 orbitControls.update()
 
 
-let player : Player = createPlayer() //Player
+let player : Player 
+let dragon : DragonPatron
+let skyboxMesh : THREE.Mesh
 let nebula : any
 const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
 
-initLight() 
-initPlane() 
+// initDragon() 
 // initLeaves()
 // initNebula()
+
+initPlayer()
+initSky()
+initLight() 
+initPlane() 
+
 
 // const enemeyCube = new THREE.Mesh(
 //     new THREE.BoxGeometry(2,2,2),
@@ -56,7 +62,6 @@ initPlane()
 // scene.add(enemeyCube)
 
 
-
 const clock = new THREE.Clock()
 function animate() : void {
     
@@ -64,12 +69,15 @@ function animate() : void {
     app.world.step(Math.min(delta, 0.1))
 	leavesMaterial.uniforms.time.value = clock.getElapsedTime()
     leavesMaterial.uniformsNeedUpdate = true
+
     player ? player.update(delta,keysPressed) : null
     nebula ? nebula.update() : null
+    dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
 
     cannonDebugRenderer.update()
     orbitControls.update()
-    mySkybox.update( app.camera );
+
+    skyboxMesh.position.copy( app.camera.position );
     app.renderer.render(app.scene, app.camera)
     requestAnimationFrame(animate)
 }
@@ -78,7 +86,8 @@ animate()
 //Things forgotten by the hand of god
 
 // Player
-function createPlayer() : Player {
+function initPlayer() : void {
+    // let model, gltfAnimations, mixer, animationMap, body
     loader.load('/models/warlock.glb',function (gltf) {
         const model = gltf.scene
         const gltfAnimations: THREE.AnimationClip[] = gltf.animations
@@ -87,7 +96,6 @@ function createPlayer() : Player {
         gltfAnimations.filter(a=> a.name != 'Armature.001|mixamo.com|Layer0').forEach((a:THREE.AnimationClip)=>{
             animationMap.set(a.name,mixer.clipAction(a))
         })
-
         const body = new CANNON.Body({ mass: 1, shape: new CANNON.Cylinder(.5, 1, 4, 12)})
         body.position.y = 7
         model.name = 'Warlock'
@@ -101,9 +109,7 @@ function createPlayer() : Player {
             app.scene.add(bullet.shape)
             app.world.addBody(bullet.body)
         })
-        }
-    )
-    return player
+    })
 }
 
 // Nebula
@@ -117,6 +123,27 @@ function initNebula() : void {
         nebula = loaded.addRenderer(nebulaRenderer);
     })
     
+}
+
+// Skybox
+function initSky() : void {
+    const ft = new THREE.TextureLoader().load("/skybox/bluecloud_ft.jpg");
+    const bk = new THREE.TextureLoader().load("/skybox/bluecloud_bk.jpg");
+    const up = new THREE.TextureLoader().load("/skybox/bluecloud_up.jpg");
+    const dn = new THREE.TextureLoader().load("/skybox/bluecloud_dn.jpg");
+    const rt = new THREE.TextureLoader().load("/skybox/bluecloud_rt.jpg");
+    const lf = new THREE.TextureLoader().load("/skybox/bluecloud_lf.jpg")
+    const skyboxGeo = new THREE.BoxGeometry(2000,2000,2000);
+    const skyboxMaterials =[
+    new THREE.MeshBasicMaterial( { map: ft, side: THREE.BackSide } ),
+    new THREE.MeshBasicMaterial( { map: bk, side: THREE.BackSide } ),
+    new THREE.MeshBasicMaterial( { map: up, side: THREE.BackSide } ),
+    new THREE.MeshBasicMaterial( { map: dn, side: THREE.BackSide } ),
+    new THREE.MeshBasicMaterial( { map: rt, side: THREE.BackSide } ),
+    new THREE.MeshBasicMaterial( { map: lf, side: THREE.BackSide } ),]
+
+    skyboxMesh = new THREE.Mesh( skyboxGeo, skyboxMaterials );
+    app.scene.add(skyboxMesh);
 }
 // Plane
 function initPlane() : void {
@@ -144,7 +171,6 @@ function initPlane() : void {
     const planeBody = new CANNON.Body({ mass: 0, shape: planeShape})
     planeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
     app.world.addBody(planeBody)
-
 }
 
 // Lights
@@ -249,6 +275,32 @@ function initLeaves(){
 
     }
 }
+
+function initDragon() : void {
+    loader.load('/models/bigboie.glb',function (gltf) {
+        const model = gltf.scene
+        const gltfAnimations: THREE.AnimationClip[] = gltf.animations
+        const mixer = new THREE.AnimationMixer(model)
+        const animationMap: Map<string, THREE.AnimationAction> = new Map()
+        gltfAnimations.forEach((a:THREE.AnimationClip)=>{
+            animationMap.set(a.name,mixer.clipAction(a))
+        })
+        const shape =  new CANNON.Cylinder(1, 1, .5, 12)
+        const body = new CANNON.Body({ mass: 1, shape: shape})
+        body.position.y = 6
+        model.name = 'DragonPatron'
+        model.position.y= 2
+        model.rotateY(1)
+        model.scale.set(4,4,4)
+        model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
+        app.scene.add(model)
+        app.world.addBody(body)
+        dragon = new DragonPatron(model,mixer,animationMap,'Flying',body)
+       // dragon.matrix = gltf.scene.matrix;
+        }
+    )
+}
+
 
 // Resize handler
 function onWindowResize() : void {
