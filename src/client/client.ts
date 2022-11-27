@@ -13,7 +13,6 @@ import Nebula, { SpriteRenderer } from 'three-nebula'
 import json from "./particles/blue.json"
 
 
-
 // Scene, camera, renderer, world
 const app = getThreeApp()
 
@@ -37,31 +36,26 @@ let nebula : any
 const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
 
-initDragon() 
-// initLeaves()
-// initNebula()
+// initDragon() d
+initSky()
+
+
 
 initPlayer()
-initSky()
 initLight() 
 initPlane() 
+
 const balls : CANNON.Body[]= []
 const ballMeshes : THREE.Mesh[] = []
-const shootVelocity = 15
+const shootVelocity = 5
 const ballShape = new CANNON.Sphere(0.2)
 const ballGeometry = new THREE.SphereGeometry(0.2)
-// Returns a vector pointing the the diretion the camera is at
-function getShootDirection() {
-    const vector = new THREE.Vector3(0, 0, 1)
-    vector.unproject(app.camera)
-    const ray = new THREE.Ray(player.getModel().position, vector.sub(player.getModel().position).normalize())
-    return ray.direction
-}
+
 
 window.addEventListener('click', (event) => {
     
 
-    const ballBody = new CANNON.Body({ mass: 1 })
+    const ballBody = new CANNON.Body({ mass: .0001 })
     ballBody.addShape(ballShape)
     const ballMesh = new THREE.Mesh(ballGeometry, new THREE.MeshLambertMaterial({ color: 0xdddddd }))
 
@@ -73,19 +67,18 @@ window.addEventListener('click', (event) => {
     balls.push(ballBody)
     ballMeshes.push(ballMesh)
 
-    const shootDirection = getShootDirection()
+    
     ballBody.velocity.set(
-      shootDirection.x * shootVelocity,
-      shootDirection.y * shootVelocity,
-      shootDirection.z * shootVelocity
+      1 * shootVelocity,
+      0 * shootVelocity,
+      0 * shootVelocity
     )
 
     // Move the ball outside the player sphere
-    const x = player.getModel().position.x + shootDirection.x +3
-    const y = player.getModel().position.y + shootDirection.y +3
-    const z = player.getModel().position.z + shootDirection.z +3
+    const x = player.getModel().position.x + 3
+    const y = player.getModel().position.y + 3
+    const z = player.getModel().position.z + 3
     ballBody.position.set(x, y, z)
-
     ballMesh.position.set(ballBody.position.x,ballBody.position.y,ballBody.position.z)
 })
 
@@ -103,13 +96,13 @@ function animate() : void {
     for (let i = 0; i < balls.length; i++) {
         ballMeshes[i].position.set(balls[i].position.x,balls[i].position.y,balls[i].position.z)
         ballMeshes[i].quaternion.set(balls[i].quaternion.x,balls[i].quaternion.y,balls[i].quaternion.z,balls[i].quaternion.w)
-      }
+    }
 
     player ? player.update(delta,keysPressed) : null
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
 
-    // cannonDebugRenderer.update()
+    cannonDebugRenderer.update()
 
     skyboxMesh.position.copy( app.camera.position );
     app.renderer.render(app.scene, app.camera)
@@ -130,18 +123,12 @@ function initPlayer() : void {
             animationMap.set(a.name,mixer.clipAction(a))
         })
         const body = new CANNON.Body({ mass: 1, shape: new CANNON.Cylinder(.5, 1, 4, 12)})
-        body.position.y = 7
+        body.position.y = 3
         model.name = 'Warlock'
         model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
         app.scene.add(model)
         app.world.addBody(body)
         player = new Player(model,mixer,animationMap,'idle',body)
-
-        player.getBullets().forEach(bullet => {
-            bullet.body.position.y = 3
-            app.scene.add(bullet.shape)
-            app.world.addBody(bullet.body)
-        })
     })
 }
 
@@ -320,9 +307,9 @@ function initDragon() : void {
         })
         const shape =  new CANNON.Cylinder(1, 1, .5, 12)
         const body = new CANNON.Body({ mass: 1, shape: shape})
-        body.position.y = 6
+        body.position.y = -10
         model.name = 'DragonPatron'
-        model.position.y= 2
+        model.position.y= -10
         model.rotateY(1)
         model.scale.set(4,4,4)
         model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})

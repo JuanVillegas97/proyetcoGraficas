@@ -8,9 +8,10 @@ interface bullet { shape: THREE.Mesh, body:  CANNON.Body, velocity : myVelocity,
 
 
 export class Player extends Model{
-    private readonly fadeDuration: number = .2
-    private readonly runVelocity: number = .4
-    private readonly walkVelocity:number = .1
+    private readonly fadeDuration : number = .2
+    private readonly runVelocity : number = .4
+    private readonly walkVelocity :number = .1
+    private readonly shootVelocity : number = 15
     private toggleRun: boolean = true
     private isShooting: boolean = false
 
@@ -32,13 +33,9 @@ export class Player extends Model{
         super(model,mixer,animationsMap,currentAction,body)
     }
 
-    public getBullets() : bullet[] {
-        return this.bullets
+    public shoot(){
+        this.isShooting= !this.isShooting
     }
-    public switchRunToggle() : void {
-        this.toggleRun = !this.toggleRun
-    }
-
 
     public update(delta:number, keysPressed:any) : void{
         const directionPressed = ['w','a','s','d'].some(key => keysPressed[key] == true)
@@ -85,4 +82,10 @@ export class Player extends Model{
         this.model.position.set(this.body.position.x,this.body.position.y-2,this.body.position.z)
     }
 
+    public getBullets() : bullet[] {
+        return this.bullets
+    }
+    public switchRunToggle() : void {
+        this.toggleRun = !this.toggleRun
+    }
 }
