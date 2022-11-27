@@ -16,7 +16,7 @@ export class Player extends Model{
 
     private bullets : bullet[]  = new Array(100).fill({
         shape: new THREE.Mesh( new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({ color: 0x005ce6 })),
-        body: new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.2)}),
+        body: new CANNON.Body({ mass: 8, shape: new CANNON.Sphere(0.2)}),
         velocity : {three: new THREE.Vector3(), cannon: new CANNON.Vec3()}
     })
 

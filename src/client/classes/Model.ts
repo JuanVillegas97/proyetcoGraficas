@@ -8,7 +8,7 @@ export class Model{
     protected currentAction: string
     protected body: CANNON.Body
 
-    
+   
     constructor(
         model: THREE.Group, 
         mixer: THREE.AnimationMixer,  
@@ -30,5 +30,9 @@ export class Model{
 
     public getModel(): THREE.Group{
         return this.model
+    }
+
+    public getBody(): CANNON.Body{
+        return this.body
     }
 }

@@ -27,24 +27,17 @@ const textureLoader = new THREE.TextureLoader()
 const loader = new GLTFLoader()
 
 
-// Contorls
-const orbitControls = new OrbitControls(app.camera, app.renderer.domElement);
-orbitControls.enableDamping = true
-orbitControls.minDistance = 5
-orbitControls.maxDistance = 15
-orbitControls.enablePan = false
-orbitControls.maxPolarAngle = Math.PI / 2 - 0.05
-orbitControls.update()
 
 
-let player : Player 
+
+let player : Player  
 let dragon : DragonPatron
 let skyboxMesh : THREE.Mesh
 let nebula : any
 const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
 
-// initDragon() 
+initDragon() 
 // initLeaves()
 // initNebula()
 
@@ -53,13 +46,51 @@ initSky()
 initLight() 
 initPlane() 
 
+const balls = []
+const ballMeshes = []
+const shootVelocity = 15
+const ballShape = new CANNON.Sphere(0.2)
+const ballGeometry = new THREE.SphereGeometry(0.2)
+// Returns a vector pointing the the diretion the camera is at
+function getShootDirection() {
+    const vector = new THREE.Vector3(0, 0, 1)
+    vector.unproject(app.camera)
+    const ray = new THREE.Ray(player.getModel().position, vector.sub(player.getModel().position).normalize())
+    return ray.direction
+}
 
-// const enemeyCube = new THREE.Mesh(
-//     new THREE.BoxGeometry(2,2,2),
-//     new THREE.MeshPhongMaterial({color:0x333333})
-// )
-// enemeyCube.position.set(1,2,2)
-// scene.add(enemeyCube)
+window.addEventListener('click', (event) => {
+    
+
+    const ballBody = new CANNON.Body({ mass: 1 })
+    ballBody.addShape(ballShape)
+    const ballMesh = new THREE.Mesh(ballGeometry, new THREE.MeshLambertMaterial({ color: 0xdddddd }))
+
+    ballMesh.castShadow = true
+    ballMesh.receiveShadow = true
+
+    app.world.addBody(ballBody)
+    app.scene.add(ballMesh)
+    balls.push(ballBody)
+    ballMeshes.push(ballMesh)
+
+    const shootDirection = getShootDirection()
+    ballBody.velocity.set(
+      shootDirection.x * shootVelocity,
+      shootDirection.y * shootVelocity,
+      shootDirection.z * shootVelocity
+    )
+
+    // Move the ball outside the player sphere
+    const x = player.getModel().position.x + shootDirection.x +3
+    const y = player.getModel().position.y + shootDirection.y +3
+    const z = player.getModel().position.z + shootDirection.z +3
+    ballBody.position.set(x, y, z)
+
+    ballMesh.position.set(ballBody.position.x,ballBody.position.y,ballBody.position.z)
+  })
+
+
 
 
 const clock = new THREE.Clock()
@@ -70,12 +101,16 @@ function animate() : void {
 	leavesMaterial.uniforms.time.value = clock.getElapsedTime()
     leavesMaterial.uniformsNeedUpdate = true
 
+    // for (let i = 0; i < balls.length; i++) {
+    //     ballMeshes[i].position.copy(balls[i].position)
+    //     ballMeshes[i].quaternion.copy(balls[i].quaternion)
+    //   }
+
     player ? player.update(delta,keysPressed) : null
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
 
     cannonDebugRenderer.update()
-    orbitControls.update()
 
     skyboxMesh.position.copy( app.camera.position );
     app.renderer.render(app.scene, app.camera)
@@ -87,7 +122,6 @@ animate()
 
 // Player
 function initPlayer() : void {
-    // let model, gltfAnimations, mixer, animationMap, body
     loader.load('/models/warlock.glb',function (gltf) {
         const model = gltf.scene
         const gltfAnimations: THREE.AnimationClip[] = gltf.animations
