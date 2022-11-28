@@ -44,9 +44,7 @@ export class Player extends Model{
             play = 'walk'
         } else if (directionPressed) {
             play = 'run.001' //walking
-        } else if(keysPressed.z==true){
-            this.isShooting = !this.isShooting
-        } else {
+        }  else {
             play = 'idle'
         }
         if (this.currentAction != play) {

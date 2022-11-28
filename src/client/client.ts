@@ -6,7 +6,7 @@ import { Player } from './classes/Player'
 import { DragonPatron } from './classes/DragonPatron'
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
 import getThreeApp from "./classes/App"
-
+import { Mutant } from './classes/Mutant'
 // @ts-ignore
 import Nebula, { SpriteRenderer } from 'three-nebula'
 // @ts-ignore
@@ -31,12 +31,13 @@ const loader = new GLTFLoader()
 
 let player : Player  
 let dragon : DragonPatron
+let mutant : Mutant
 let skyboxMesh : THREE.Mesh
 let nebula : any
 const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
 
-// initDragon() d
+initDragon() 
 initSky()
 
 
@@ -44,6 +45,7 @@ initSky()
 initPlayer()
 initLight() 
 initPlane() 
+initMutant()
 
 const balls : CANNON.Body[]= []
 const ballMeshes : THREE.Mesh[] = []
@@ -101,10 +103,13 @@ function animate() : void {
     player ? player.update(delta,keysPressed) : null
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
-
+    mutant ?  mutant.update(delta,app.scene) : null
     cannonDebugRenderer.update()
 
     skyboxMesh.position.copy( app.camera.position );
+    //update camera to follow player
+     player ? app.camera.position.x = player.getModel().position.x : null
+     player ? app.camera.lookAt(player.getModel().position) :null
     app.renderer.render(app.scene, app.camera)
     requestAnimationFrame(animate)
 }
@@ -145,6 +150,32 @@ function initNebula() : void {
     
 }
 
+//Mutant
+function initMutant():void {
+    loader.load('/models/mutant.glb',function (gltf) {
+        const model = gltf.scene
+        const gltfAnimations: THREE.AnimationClip[] = gltf.animations
+        const mixer = new THREE.AnimationMixer(model)
+        const animationMap: Map<string, THREE.AnimationAction> = new Map()
+        gltfAnimations.forEach((a:THREE.AnimationClip)=>{
+            animationMap.set(a.name,mixer.clipAction(a))
+        })
+        const shape =  new CANNON.Cylinder(2, 2, 9, 12)
+        const body = new CANNON.Body({ mass: 25, shape: shape})
+        body.position.y = 0
+        body.position.x = 15
+        model.name = 'Mutant'
+        model.position.y= 0
+        model.position.x= 15
+        model.rotateY(-1)
+        model.scale.set(5,5,5)
+        model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
+        app.scene.add(model)
+        app.world.addBody(body)
+        mutant = new Mutant(model,mixer,animationMap,'idle',body)
+    }
+    )
+}
 // Skybox
 function initSky() : void {
     const ft = new THREE.TextureLoader().load("/skybox/bluecloud_ft.jpg");
