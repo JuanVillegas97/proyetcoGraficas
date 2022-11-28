@@ -103,7 +103,7 @@ function animate() : void {
     player ? player.update(delta,keysPressed,mouseButtonsPressed) : null
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
-    mutant ?  mutant.update(delta,app.scene) : null
+    mutant ?  mutant.update(delta,app.scene,player.getModel()) : null;
     cannonDebugRenderer.update()
 
     skyboxMesh.position.copy( app.camera.position );

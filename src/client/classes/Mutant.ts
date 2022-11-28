@@ -26,22 +26,25 @@ import { Vector2 } from 'three';
    
 
 
-     public update(delta:number,scene:THREE.Scene) : void{
+     public update(delta:number,scene:THREE.Scene, playerModel:THREE.Group) : void{
         // this.body.position.set(posVec.x-10,posVec.y+10,posVec.z)
         // this.model.position.set(posVec.x-10,posVec.y-2,posVec.z)
         // this.model.rotation.y = rotation.y-.3
 
         this.mixer.update(delta)
-        this.raycastCheck(scene)
+        this.raycastCheck(scene,playerModel)
      }
 
      public attack():void {
         //todo shoot stuff
      }
 
-     public raycastCheck(scene: THREE.Scene):void {
-        this.search.forEach((direction) => {
-            const far = 15
+     public raycastCheck(scene: THREE.Scene, playerModel:THREE.Group):void {
+      // (A - B).magnitude < farDistance
+      const far = 15
+      if( (this.model.position.distanceTo(playerModel.position) < far) ) {
+         this.search.forEach((direction) => {
+            // const far = 15
             const dampSpeed = .15
             //scene.add(new THREE.ArrowHelper(this.raycaster.ray.direction, this.raycaster.ray.origin, far, 0xff0000) );
             const rayVec = new THREE.Vector3(this.model.position.x,this.model.position.y+2,this.model.position.z)
@@ -56,6 +59,7 @@ import { Vector2 } from 'three';
                 this.body.position.z += direction.z*dampSpeed;
             }
         })
+      } 
         
      }
  }
