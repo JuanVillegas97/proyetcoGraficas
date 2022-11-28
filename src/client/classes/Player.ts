@@ -16,22 +16,24 @@ export class Player extends Model{
     private toggleRun: boolean = true
     
     //animation binding
-    private boundCastAttack1 = this.castAttack1.bind(this);
-    private boundswitcShoot = this.shoot.bind(this)
+    private boundCastAttack1 = this.shoot.bind(this)
     
     private readonly shootVelocity : number = 10
     public balls : CANNON.Body[]= []
     public ballMeshes : THREE.Mesh[] = []
     public particles : any
-
+    private balldirection = {x:0,y:0,z:0}
     constructor(
         model: THREE.Group, 
         mixer: THREE.AnimationMixer,  
         animationsMap: Map<string, THREE.AnimationAction>,
         currentAction: string,
-        body: CANNON.Body
+        body: CANNON.Body,
+        particles:any
         ){
         super(model,mixer,animationsMap,currentAction,body)
+        this.particles=particles
+
     }
 
     public shoot(){
@@ -49,9 +51,9 @@ export class Player extends Model{
     
         
         ballBody.velocity.set(
-          1 * this.shootVelocity,
-          0 * this.shootVelocity,
-          0 * this.shootVelocity
+        this.balldirection.x * this.shootVelocity,
+        this.balldirection.y * this.shootVelocity,
+        this.balldirection.z * this.shootVelocity
         )
     
         const x = this.model.position.x 
@@ -66,8 +68,8 @@ export class Player extends Model{
         this.updateBullets()
         if(this.body.position.z<-10) this.body.position.z=-10;
         if(this.body.position.z>10) this.body.position.z=10;
-        if(this.body.position.x<-20) this.body.position.x=-20;
-        if(this.body.position.x>20) this.body.position.x=20;
+        if(this.body.position.x<-30) this.body.position.x=-30;
+        if(this.body.position.x>30) this.body.position.x=30;
 
         
 
@@ -107,20 +109,24 @@ export class Player extends Model{
         if (this.currentAction == 'run.001' || this.currentAction == 'walk') {
             const velocity = this.currentAction == 'run.001' ? this.runVelocity : this.walkVelocity
             if(keysPressed.d==true){
+                this.balldirection={x:1,y:0,z:0}
                 this.body.position.x += velocity
                 this.model.rotation.y = 1.5
             }
             if(keysPressed.a==true){
+                this.balldirection={x:-1,y:0,z:0}
                 this.body.position.x -= velocity
                 this.model.rotation.y = -1.5
 
             }
             if(keysPressed.s==true){
+                this.balldirection={x:0,y:0,z:1}
                 this.body.position.z += velocity
                 this.model.rotation.y = 0
 
             }
             if(keysPressed.w==true){
+                this.balldirection={x:0,y:0,z:-1}
                 this.body.position.z -= velocity
                 this.model.rotation.y = 3
             }
@@ -133,14 +139,15 @@ export class Player extends Model{
         for (let i = 0; i < this.balls.length; i++) {
             this.ballMeshes[i].position.set(this.balls[i].position.x,this.balls[i].position.y,this.balls[i].position.z)
             this.ballMeshes[i].quaternion.set(this.balls[i].quaternion.x,this.balls[i].quaternion.y,this.balls[i].quaternion.z,this.balls[i].quaternion.w)
+            this.particles.emitters.forEach((a:any) => {
+                a.position.set(this.balls[i].position.x,this.balls[i].position.y,this.balls[i].position.z)
+                a.position.scale=.1
+            })
         }
     }
     
     public switchRunToggle() : void {
         this.toggleRun = !this.toggleRun
     }
-     //HAPPENS on full attack animation
-     public castAttack1(): void {
-        setTimeout(this.boundswitcShoot, 500); 
-    }
+    
 }

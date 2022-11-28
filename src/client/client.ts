@@ -41,29 +41,22 @@ const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
 
 // initLeaves()
-initNebula()
 initPlane() 
 initPlayer()
 initLight() 
-initEnvironment()
 
 // initMutant()
 // initDragon() 
 initSky()
 
 
-
-window.addEventListener('click', (event) => {
-    player.shoot()
-})
-
-
-
 let removeBody:any;
 let bodi: any
+let meshi: any
 const clock = new THREE.Clock()
 function animate() : void {
     if(removeBody==1){
+        meshi.visible=false
         app.world.removeBody(bodi)
     }
     const delta = clock.getDelta()
@@ -89,9 +82,9 @@ function animate() : void {
             body.addEventListener("collide",(e:any)=>{
                 removeBody = 1
                 bodi=body
+                meshi=mesh
                 player.ballMeshes.splice(index,1)
                 player.balls.splice(index,1)
-                app.scene.remove(mesh)
             })
             app.world.addBody(body)
             app.scene.add(mesh)
@@ -100,55 +93,13 @@ function animate() : void {
     }
 
     app.world.step(Math.min(delta, 0.1))
-    // cannonDebugRenderer.update()
+    cannonDebugRenderer.update()
     app.renderer.render(app.scene, app.camera)
     requestAnimationFrame(animate)
 }
 animate()
 
 //Things forgotten by the hand of god
-
-
-
-//Environment
-function initEnvironment() : void {
-    const fbxLoader = new FBXLoader()
-    fbxLoader.load('/models/environment//models/village/Windmill.fbx',(object) => {
-            object.scale.set(1,1,1)
-
-            app.scene.add(object)
-        },
-    )
-    new MTLLoader().load('/models/village/BlackSmithShop.mtl',(materials)=>{
-        materials.preload()
-        new OBJLoader().setMaterials(materials).loadAsync('/models/village/BlackSmithShop.obj')
-        .then((group)=>{
-            const blackSmithShop = group.children[0]
-            blackSmithShop.castShadow=true
-            blackSmithShop.receiveShadow=true
-            blackSmithShop.position.set(0,3,-20)
-            app.scene.add(blackSmithShop)
-        })
-    },(xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-    },
-    (error) => {
-        console.log('An error happened')
-    })
-    new MTLLoader().load('/models/village/Windmill.mtl',(materials)=>{
-        new OBJLoader().setMaterials(materials).loadAsync('/models/village/Windmill.obj')
-        .then((group)=>{
-            const windmill = group.children[0]
-            windmill.castShadow=true
-            windmill.receiveShadow=true
-            windmill.position.set(-10,12,-20)
-            windmill.rotateY(30)
-
-            app.scene.add(windmill)
-        })
-    })
-
-}
 // Player
 function initPlayer() : void {
     loader.load('/models/warlock.glb',function (gltf) {
@@ -165,23 +116,14 @@ function initPlayer() : void {
         model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
         app.scene.add(model)
         app.world.addBody(body)
-        player = new Player(model,mixer,animationMap,'idle',body)
+        Nebula.fromJSONAsync(json, THREE).then((particle:any) => {
+            const nebulaRenderer = new SpriteRenderer(app.scene, THREE)
+            player = new Player(model,mixer,animationMap,'idle',body,particle)
+            nebula = particle.addRenderer(nebulaRenderer);
+        })
     })
 }
 
-// Nebula
-function initNebula() : void {
-    Nebula.fromJSONAsync(json, THREE).then((particle:any) => {
-        const nebulaRenderer = new SpriteRenderer(app.scene, THREE)
-        if(player)player.particles=particle
-        // particle.emitters.forEach((a:any) => {
-        //     a.position.y = 4
-            
-        // })
-        nebula = particle.addRenderer(nebulaRenderer);
-    })
-    
-}
 
 //Mutant
 function initMutant():void {
@@ -231,6 +173,24 @@ function initSky() : void {
 }
 // Plane
 function initPlane() : void {
+    const dummy = new THREE.Object3D();
+    const geometry = new THREE.PlaneGeometry( 0.1, 1, 1, 4 );
+    geometry.translate( 0, 0.5, 0 ); 
+    const instancedMesh = new THREE.InstancedMesh( geometry, leavesMaterial, 5000 );
+    app.scene.add( instancedMesh );
+    for ( let i=0 ; i<5000 ; i++ ) {
+        dummy.position.set(
+        ( Math.random() - 0.5 ) * 10,
+        0,
+        ( Math.random() - 0.5 ) * 10
+    );
+
+    dummy.scale.setScalar( 0.5 + Math.random() * 0.5 );
+    dummy.rotation.y = Math.random() * Math.PI;
+    dummy.updateMatrix();
+    instancedMesh.setMatrixAt( i, dummy.matrix );
+    }
+
     const soilBaseColor = textureLoader.load("./textures/soil/Rock_Moss_001_basecolor.jpg");
     const soilNormalMap = textureLoader.load("./textures/soil/Rock_Moss_001_normal.jpg");
     const soilHeightMap = textureLoader.load("./textures/soil/Rock_Moss_001_height.png");
@@ -241,12 +201,11 @@ function initPlane() : void {
     const planeSoil = new THREE.Mesh(geometrySoil, new THREE.MeshStandardMaterial({
         map: soilBaseColor,
         normalMap: soilNormalMap,
+        color: '#749255',
         displacementMap: soilHeightMap, displacementScale: 2,
         roughnessMap: soilRoughness, roughness: 0,
         aoMap: soilAmbientOcclusion
     }));
-    // const planeSoil = new THREE.Mesh(geometrySoil, new THREE.MeshPhongMaterial({color: '#6F8B4E'}));
-
 
     planeSoil.rotateX(-Math.PI / 2)
     planeSoil.receiveShadow = true;
@@ -256,18 +215,56 @@ function initPlane() : void {
     const planeShape = new CANNON.Plane()
     const planeBody = new CANNON.Body({ mass: 0, shape: planeShape})
 
-    // const wall = new CANNON.Body({ mass: 0, shape: planeShape})
-    // wall.position.z=-12
-
-    // app.world.addBody(wall)
-
     planeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
     app.world.addBody(planeBody)
+    // loader.load('/models/village/BlackSmithShop.glb',function (gltf) {
+    //     const model = gltf.scene
+    //     model.position.set(0,3,-20)
+
+    //     model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
+    //     app.scene.add(model)
+    // })
+    loader.load('/models/village/Gate_Level1_BlueTeam.glb',function (gltf) {
+        const model = gltf.scene
+        model.position.set(0,7.6,-30)
+        model.rotateY(1.55)
+        model.scale.y=.7
+
+        model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
+        app.scene.add(model)
+    })
+    
+    let wallsX:number = -25.5
+    for (let i = 0; i < 2; i++) {
+        loader.load('/models/village/Wall_Level1_BlueTeam.glb',function (gltf) {
+            let model = gltf.scene
+            model.rotateY(80)
+            model.scale.y=2
+
+            model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
+            model.position.set(wallsX,5,-30)
+            app.scene.add(model)
+            wallsX+=51.5;
+        })
+    }
+    let towerX :number= -39.9
+    for (let i = 0; i < 2; i++) {
+        loader.load('/models/village/ArcherTower_Level1_BlueTeam.glb',function (gltf) {
+            let model = gltf.scene
+            // model.rotateY(80)
+            model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
+            model.position.set(towerX,8,-30)
+            model.scale.y=2
+
+            app.scene.add(model)
+            towerX+=79.7
+        })
+    }
 }
 
 // Lights
 function initLight() : void {
-    app.scene.add(new THREE.AmbientLight(0xffffff, 1))
+    app.scene.add(new THREE.AmbientLight(0xffffff, .8))
     const dirLight = new THREE.DirectionalLight(0xffffff, 1)
     dirLight.position.set(- 60, 100, - 10);
     dirLight.castShadow = true;
@@ -279,20 +276,7 @@ function initLight() : void {
     dirLight.shadow.camera.far = 200;
     dirLight.shadow.mapSize.width = 4096;
     dirLight.shadow.mapSize.height = 4096;
-
-    // dirLight.castShadow=true
-    // dirLight.position.set(30,50,30)
-    // dirLight.shadow.mapSize.width = 2048
-    // dirLight.shadow.mapSize.height = 2048
-    // dirLight.shadow.camera.left = -70
-    // dirLight.shadow.camera.right = -70
-    // dirLight.shadow.camera.top = -70
-    // dirLight.shadow.camera.bottom = -70
-
-
-
     app.scene.add(dirLight);
-    // scene.add( new THREE.CameraHelper(dirLight.shadow.camera))
 }
 
 //Leaves
@@ -356,29 +340,6 @@ function shaderLeaves(){
     });
 }
 
-// Init leaves
-function initLeaves(){
-    const dummy = new THREE.Object3D();
-    const geometry = new THREE.PlaneGeometry( 0.1, 1, 1, 4 );
-    geometry.translate( 0, 0.5, 0 ); // move grass blade geometry lowest point at 0.
-    const instancedMesh = new THREE.InstancedMesh( geometry, leavesMaterial, 5000 );
-    app.scene.add( instancedMesh );
-    for ( let i=0 ; i<5000 ; i++ ) {
-        dummy.position.set(
-        ( Math.random() - 0.5 ) * 10,
-        0,
-        ( Math.random() - 0.5 ) * 10
-    );
-    
-    dummy.scale.setScalar( 0.5 + Math.random() * 0.5 );
-    
-    dummy.rotation.y = Math.random() * Math.PI;
-    
-    dummy.updateMatrix();
-    instancedMesh.setMatrixAt( i, dummy.matrix );
-
-    }
-}
 
 function initDragon() : void {
     loader.load('/models/bigboie.glb',function (gltf) {
@@ -455,6 +416,11 @@ window.addEventListener('mouseup',(e)=>{
     //1: mouse wheel down
     //2: right mouse
      (mouseButtonsPressed as any)[e.button.valueOf()] = false   
+    e.preventDefault();
+    
+})
+
+window.addEventListener('contextmenu',(e)=>{
     e.preventDefault();
     
 })
