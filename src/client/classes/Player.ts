@@ -42,6 +42,13 @@ export class Player extends Model{
     }
 
     public update(delta:number, keysPressed:any, mouseButtonsPressed:any) : void{
+        console.log(mouseButtonsPressed)
+        if(this.body.position.z<-10) this.body.position.z=-10;
+        if(this.body.position.z>10) this.body.position.z=10;
+        if(this.body.position.x<-20) this.body.position.x=-20;
+        if(this.body.position.x>20) this.body.position.x=20;
+
+    
         const directionPressed = ['w','a','s','d'].some(key => keysPressed[key] == true)
         let attack_1 =['0'].some(key => mouseButtonsPressed[key] == true)
         let attack_2 =['2'].some(key => mouseButtonsPressed[key] == true)
@@ -55,7 +62,7 @@ export class Player extends Model{
             // 1h_attack
             play = '1H_attack'
             //play attack only if casting is done fully
-          this.mixer.addEventListener( 'loop', this.boundCastAttack1)
+            this.mixer.addEventListener( 'loop', this.boundCastAttack1)
         } else if(attack_2){
             play = '2H_attack'
             //this.castA()

@@ -2,6 +2,9 @@ import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import {  GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { MTLLoader} from 'three/examples/jsm/loaders/MTLLoader'
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { Player } from './classes/Player'
 import { DragonPatron } from './classes/DragonPatron'
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
@@ -11,6 +14,7 @@ import { Mutant } from './classes/Mutant'
 import Nebula, { SpriteRenderer } from 'three-nebula'
 // @ts-ignore
 import json from "./particles/blue.json"
+import { Color } from 'three'
 
 
 // Scene, camera, renderer, world
@@ -25,10 +29,6 @@ const textureLoader = new THREE.TextureLoader()
 //GLTF Loader
 const loader = new GLTFLoader()
 
-
-
-
-
 let player : Player  
 let dragon : DragonPatron
 let mutant : Mutant
@@ -37,16 +37,16 @@ let nebula : any
 const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
 
-initDragon() 
-initSky()
-
-
-
+// initLeaves()
+// initNebula()
+initPlane() 
 initPlayer()
 initLight() 
-initPlane() 
-initMutant()
+initEnvironment()
 
+// initMutant()
+// initDragon() 
+initSky()
 
 const balls : CANNON.Body[]= []
 const ballMeshes : THREE.Mesh[] = []
@@ -98,16 +98,20 @@ function animate() : void {
         ballMeshes[i].quaternion.set(balls[i].quaternion.x,balls[i].quaternion.y,balls[i].quaternion.z,balls[i].quaternion.w)
     }
 
-    player ? player.update(delta,keysPressed,mouseButtonsPressed) : null
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
     mutant ?  mutant.update(delta,app.scene) : null
-    cannonDebugRenderer.update()
 
-    skyboxMesh.position.copy( app.camera.position );
+    skyboxMesh ? skyboxMesh.position.copy( app.camera.position ):null
     //update camera to follow player
-     player ? app.camera.position.x = player.getModel().position.x : null
-     player ? app.camera.lookAt(player.getModel().position) :null
+
+    if(player){
+        app.camera.position.x = player.getModel().position.x
+        app.camera.lookAt(player.getModel().position)
+        player.update(delta,keysPressed,mouseButtonsPressed) 
+    }
+  
+    cannonDebugRenderer.update()
     app.renderer.render(app.scene, app.camera)
     requestAnimationFrame(animate)
 }
@@ -115,6 +119,39 @@ animate()
 
 //Things forgotten by the hand of god
 
+//Environment
+function initEnvironment() : void {
+    const fbxLoader = new FBXLoader()
+    fbxLoader.load('/models/environment//models/village/Windmill.fbx',(object) => {
+            object.scale.set(1,1,1)
+
+            app.scene.add(object)
+        },
+    )
+    new MTLLoader().load('/models/village/BlackSmithShop.mtl',(materials)=>{
+        new OBJLoader().setMaterials(materials).loadAsync('/models/village/BlackSmithShop.obj')
+        .then((group)=>{
+            const blackSmithShop = group.children[0]
+            blackSmithShop.castShadow=true
+            blackSmithShop.receiveShadow=true
+            blackSmithShop.position.set(0,3,-20)
+            app.scene.add(blackSmithShop)
+        })
+    })
+    new MTLLoader().load('/models/village/Windmill.mtl',(materials)=>{
+        new OBJLoader().setMaterials(materials).loadAsync('/models/village/Windmill.obj')
+        .then((group)=>{
+            const windmill = group.children[0]
+            windmill.castShadow=true
+            windmill.receiveShadow=true
+            windmill.position.set(-10,12,-20)
+            windmill.rotateY(30)
+
+            app.scene.add(windmill)
+        })
+    })
+
+}
 // Player
 function initPlayer() : void {
     loader.load('/models/warlock.glb',function (gltf) {
@@ -202,7 +239,7 @@ function initPlane() : void {
     const soilRoughness = textureLoader.load("./textures/soil/Rock_Moss_001_roughness.jpg");
     const soilAmbientOcclusion = textureLoader.load("./textures/soil/Rock_Moss_001_ambientOcclusion.jpg");
 
-    const geometrySoil = new THREE.PlaneGeometry(25, 10,200,200)
+    const geometrySoil = new THREE.PlaneGeometry(100, 50,200,200)
     const planeSoil = new THREE.Mesh(geometrySoil, new THREE.MeshStandardMaterial({
         map: soilBaseColor,
         normalMap: soilNormalMap,
@@ -210,6 +247,8 @@ function initPlane() : void {
         roughnessMap: soilRoughness, roughness: 0,
         aoMap: soilAmbientOcclusion
     }));
+    // const planeSoil = new THREE.Mesh(geometrySoil, new THREE.MeshPhongMaterial({color: '#6F8B4E'}));
+
 
     planeSoil.rotateX(-Math.PI / 2)
     planeSoil.receiveShadow = true;
@@ -218,13 +257,19 @@ function initPlane() : void {
     app.scene.add(planeSoil)
     const planeShape = new CANNON.Plane()
     const planeBody = new CANNON.Body({ mass: 0, shape: planeShape})
+
+    // const wall = new CANNON.Body({ mass: 0, shape: planeShape})
+    // wall.position.z=-12
+
+    // app.world.addBody(wall)
+
     planeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
     app.world.addBody(planeBody)
 }
 
 // Lights
 function initLight() : void {
-    app.scene.add(new THREE.AmbientLight(0xffffff, 0.7))
+    app.scene.add(new THREE.AmbientLight(0xffffff, 1))
     const dirLight = new THREE.DirectionalLight(0xffffff, 1)
     dirLight.position.set(- 60, 100, - 10);
     dirLight.castShadow = true;
@@ -236,6 +281,18 @@ function initLight() : void {
     dirLight.shadow.camera.far = 200;
     dirLight.shadow.mapSize.width = 4096;
     dirLight.shadow.mapSize.height = 4096;
+
+    // dirLight.castShadow=true
+    // dirLight.position.set(30,50,30)
+    // dirLight.shadow.mapSize.width = 2048
+    // dirLight.shadow.mapSize.height = 2048
+    // dirLight.shadow.camera.left = -70
+    // dirLight.shadow.camera.right = -70
+    // dirLight.shadow.camera.top = -70
+    // dirLight.shadow.camera.bottom = -70
+
+
+
     app.scene.add(dirLight);
     // scene.add( new THREE.CameraHelper(dirLight.shadow.camera))
 }
@@ -373,6 +430,7 @@ window.addEventListener("keydown", (event) => {
 document.addEventListener('keyup', (event) => {
     (keysPressed as any)[event.key.toLowerCase()] = false
 }, false)
+
 // window.addEventListener('mousedown',(e)=>{
 //     setTimeout(function() {
 //         console.log('hi')
