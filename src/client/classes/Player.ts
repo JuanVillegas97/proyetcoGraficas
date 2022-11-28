@@ -14,6 +14,10 @@ export class Player extends Model{
     private readonly shootVelocity : number = 15
     private toggleRun: boolean = true
     private isShooting: boolean = false
+    //animation binding
+    private boundCastAttack1 = this.castAttack1.bind(this);
+    private boundswitcShoot = this.shoot.bind(this)
+    
 
     private bullets : bullet[]  = new Array(100).fill({
         shape: new THREE.Mesh( new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({ color: 0x005ce6 })),
@@ -37,14 +41,28 @@ export class Player extends Model{
         this.isShooting= !this.isShooting
     }
 
-    public update(delta:number, keysPressed:any) : void{
+    public update(delta:number, keysPressed:any, mouseButtonsPressed:any) : void{
         const directionPressed = ['w','a','s','d'].some(key => keysPressed[key] == true)
+        let attack_1 =['0'].some(key => mouseButtonsPressed[key] == true)
+        let attack_2 =['2'].some(key => mouseButtonsPressed[key] == true)
+        let attack_3 =['1'].some(key => mouseButtonsPressed[key] == true)
         let play = ''
         if (directionPressed && this.toggleRun) {
             play = 'walk'
         } else if (directionPressed) {
             play = 'run.001' //walking
-        }  else {
+        } else if(attack_1 ){
+            // 1h_attack
+            play = '1H_attack'
+            //play attack only if casting is done fully
+          this.mixer.addEventListener( 'loop', this.boundCastAttack1)
+        } else if(attack_2){
+            play = '2H_attack'
+            //this.castA()
+        }else if(attack_3){
+            play = 'AOE'
+            //todo add loop
+        }else {
             play = 'idle'
         }
         if (this.currentAction != play) {
@@ -78,6 +96,7 @@ export class Player extends Model{
             }
         }
         this.model.position.set(this.body.position.x,this.body.position.y-2,this.body.position.z)
+        this.mixer.removeEventListener('loop',this.boundCastAttack1)
     }
 
     public getBullets() : bullet[] {
@@ -85,5 +104,11 @@ export class Player extends Model{
     }
     public switchRunToggle() : void {
         this.toggleRun = !this.toggleRun
+    }
+     //HAPPENS on full attack animation
+     public castAttack1(): void {
+        this.shoot()
+        setTimeout(this.boundswitcShoot, 500); 
+        
     }
 }

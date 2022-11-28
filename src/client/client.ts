@@ -100,7 +100,7 @@ function animate() : void {
         ballMeshes[i].quaternion.set(balls[i].quaternion.x,balls[i].quaternion.y,balls[i].quaternion.z,balls[i].quaternion.w)
     }
 
-    player ? player.update(delta,keysPressed) : null
+    player ? player.update(delta,keysPressed,mouseButtonsPressed) : null
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
     mutant ?  mutant.update(delta,app.scene) : null
@@ -382,3 +382,25 @@ document.addEventListener('keyup', (event) => {
 //       }, 500);
 // })
 
+//Mouse listener
+const mouseButtonsPressed ={ }
+window.addEventListener('mousedown',(e)=>{
+    //0: left mouse
+    //1: mouse wheel down
+    //2: right mouse
+     (mouseButtonsPressed as any)[e.button.valueOf()] = true
+    //  if(e.button.valueOf() == 0) {
+    //    //do something
+    //  } else if (e.button.valueOf() == 2) {
+    //     //do something
+    //  }
+    e.preventDefault();
+})
+window.addEventListener('mouseup',(e)=>{
+    //0: left mouse
+    //1: mouse wheel down
+    //2: right mouse
+     (mouseButtonsPressed as any)[e.button.valueOf()] = false   
+    e.preventDefault();
+    
+})
