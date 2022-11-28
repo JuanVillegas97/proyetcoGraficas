@@ -3,15 +3,13 @@ import * as CANNON from 'cannon-es'
 import { Model } from './Model'
 import { Vec3 } from 'cannon-es'
 
-interface myVelocity {three: THREE.Vector3, cannon: CANNON.Vec3}
-interface bullet { shape: THREE.Mesh, body:  CANNON.Body, velocity : myVelocity,} 
+interface bullet { shape: THREE.Mesh, body:  CANNON.Body} 
 
 
 export class Player extends Model{
     private readonly fadeDuration : number = .2
     private readonly runVelocity : number = .4
     private readonly walkVelocity :number = .1
-    private readonly shootVelocity : number = 15
     private toggleRun: boolean = true
     private isShooting: boolean = false
     //animation binding
@@ -21,11 +19,13 @@ export class Player extends Model{
 
     private bullets : bullet[]  = new Array(100).fill({
         shape: new THREE.Mesh( new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({ color: 0x005ce6 })),
-        body: new CANNON.Body({ mass: 8, shape: new CANNON.Sphere(0.2)}),
-        velocity : {three: new THREE.Vector3(), cannon: new CANNON.Vec3()}
+        body: new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.2)}),
     })
 
-    private bulletIndex = 0
+    private readonly shootVelocity : number = 15
+    private balls : CANNON.Body[]= []
+    private ballMeshes : THREE.Mesh[] = []
+
 
     constructor(
         model: THREE.Group, 
@@ -37,22 +37,50 @@ export class Player extends Model{
         super(model,mixer,animationsMap,currentAction,body)
     }
 
-    public shoot(){
-        this.isShooting= !this.isShooting
+    public shoot(scene:THREE.Scene, world:CANNON.World){
+        const ballGeometry = new THREE.SphereGeometry(0.2)
+        const ballBody = new CANNON.Body({ mass: .0001 })
+        ballBody.addShape(new CANNON.Sphere(0.2))
+        const ballMesh = new THREE.Mesh(ballGeometry, new THREE.MeshLambertMaterial({ color: 0xdddddd }))
+    
+        ballMesh.castShadow = true
+        ballMesh.receiveShadow = true
+    
+        world.addBody(ballBody)
+        scene.add(ballMesh)
+
+        this.balls.push(ballBody)
+        this.ballMeshes.push(ballMesh)
+    
+        
+        ballBody.velocity.set(
+          1 * this.shootVelocity,
+          0 * this.shootVelocity,
+          0 * this.shootVelocity
+        )
+    
+        const x = this.model.position.x + 3
+        const y = this.model.position.y + 3
+        const z = this.model.position.z + 3
+        ballBody.position.set(x, y, z)
+        ballMesh.position.set(ballBody.position.x,ballBody.position.y,ballBody.position.z)
     }
 
     public update(delta:number, keysPressed:any, mouseButtonsPressed:any) : void{
-        console.log(mouseButtonsPressed)
+        // console.log(mouseButtonsPressed)
+        this.updateBullets()
         if(this.body.position.z<-10) this.body.position.z=-10;
         if(this.body.position.z>10) this.body.position.z=10;
         if(this.body.position.x<-20) this.body.position.x=-20;
         if(this.body.position.x>20) this.body.position.x=20;
 
-    
+        
+
         const directionPressed = ['w','a','s','d'].some(key => keysPressed[key] == true)
         let attack_1 =['0'].some(key => mouseButtonsPressed[key] == true)
         let attack_2 =['2'].some(key => mouseButtonsPressed[key] == true)
         let attack_3 =['1'].some(key => mouseButtonsPressed[key] == true)
+
         let play = ''
         if (directionPressed && this.toggleRun) {
             play = 'walk'
@@ -106,6 +134,12 @@ export class Player extends Model{
         this.mixer.removeEventListener('loop',this.boundCastAttack1)
     }
 
+    private updateBullets() : void {
+        for (let i = 0; i < this.balls.length; i++) {
+            this.ballMeshes[i].position.set(this.balls[i].position.x,this.balls[i].position.y,this.balls[i].position.z)
+            this.ballMeshes[i].quaternion.set(this.balls[i].quaternion.x,this.balls[i].quaternion.y,this.balls[i].quaternion.z,this.balls[i].quaternion.w)
+        }
+    }
     public getBullets() : bullet[] {
         return this.bullets
     }
@@ -114,8 +148,6 @@ export class Player extends Model{
     }
      //HAPPENS on full attack animation
      public castAttack1(): void {
-        this.shoot()
         setTimeout(this.boundswitcShoot, 500); 
-        
     }
 }

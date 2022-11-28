@@ -48,38 +48,10 @@ initEnvironment()
 // initDragon() 
 initSky()
 
-const balls : CANNON.Body[]= []
-const ballMeshes : THREE.Mesh[] = []
-const shootVelocity = 5
-const ballShape = new CANNON.Sphere(0.2)
-const ballGeometry = new THREE.SphereGeometry(0.2)
+
 
 window.addEventListener('click', (event) => {
-    const ballBody = new CANNON.Body({ mass: .0001 })
-    ballBody.addShape(ballShape)
-    const ballMesh = new THREE.Mesh(ballGeometry, new THREE.MeshLambertMaterial({ color: 0xdddddd }))
-
-    ballMesh.castShadow = true
-    ballMesh.receiveShadow = true
-
-    app.world.addBody(ballBody)
-    app.scene.add(ballMesh)
-    balls.push(ballBody)
-    ballMeshes.push(ballMesh)
-
-    
-    ballBody.velocity.set(
-      1 * shootVelocity,
-      0 * shootVelocity,
-      0 * shootVelocity
-    )
-
-    const x = player.getModel().position.x + 3
-    const y = player.getModel().position.y + 3
-    const z = player.getModel().position.z + 3
-    ballBody.position.set(x, y, z)
-    ballMesh.position.set(ballBody.position.x,ballBody.position.y,ballBody.position.z)
-
+    player.shoot(app.scene, app.world)
 })
 
 
@@ -93,10 +65,7 @@ function animate() : void {
 	leavesMaterial.uniforms.time.value = clock.getElapsedTime()
     leavesMaterial.uniformsNeedUpdate = true
 
-    for (let i = 0; i < balls.length; i++) {
-        ballMeshes[i].position.set(balls[i].position.x,balls[i].position.y,balls[i].position.z)
-        ballMeshes[i].quaternion.set(balls[i].quaternion.x,balls[i].quaternion.y,balls[i].quaternion.z,balls[i].quaternion.w)
-    }
+    
 
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
@@ -129,6 +98,7 @@ function initEnvironment() : void {
         },
     )
     new MTLLoader().load('/models/village/BlackSmithShop.mtl',(materials)=>{
+        materials.preload()
         new OBJLoader().setMaterials(materials).loadAsync('/models/village/BlackSmithShop.obj')
         .then((group)=>{
             const blackSmithShop = group.children[0]
@@ -137,6 +107,11 @@ function initEnvironment() : void {
             blackSmithShop.position.set(0,3,-20)
             app.scene.add(blackSmithShop)
         })
+    },(xhr) => {
+        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    },
+    (error) => {
+        console.log('An error happened')
     })
     new MTLLoader().load('/models/village/Windmill.mtl',(materials)=>{
         new OBJLoader().setMaterials(materials).loadAsync('/models/village/Windmill.obj')
