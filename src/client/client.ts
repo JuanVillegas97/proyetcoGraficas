@@ -66,7 +66,8 @@ function animate() : void {
 
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
-    mutant ?  mutant.update(delta,app.scene) : null
+    mutant ?  mutant.update(delta,app.scene,player.getModel()) : null;
+    cannonDebugRenderer.update()
 
     skyboxMesh ? skyboxMesh.position.copy( app.camera.position ):null
     //update camera to follow player
