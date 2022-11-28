@@ -8,9 +8,10 @@ interface bullet { shape: THREE.Mesh, body:  CANNON.Body, velocity : myVelocity,
 
 
 export class Player extends Model{
-    private readonly fadeDuration: number = .2
-    private readonly runVelocity: number = .4
-    private readonly walkVelocity:number = .1
+    private readonly fadeDuration : number = .2
+    private readonly runVelocity : number = .4
+    private readonly walkVelocity :number = .1
+    private readonly shootVelocity : number = 15
     private toggleRun: boolean = true
     private isShooting: boolean = false
 
@@ -32,63 +33,18 @@ export class Player extends Model{
         super(model,mixer,animationsMap,currentAction,body)
     }
 
-    public getBullets() : bullet[] {
-        return this.bullets
-    }
-    public switchRunToggle() : void {
-        this.toggleRun = !this.toggleRun
+    public shoot(){
+        this.isShooting= !this.isShooting
     }
 
-
-    public shoot(shootingObject:THREE.Group ,isShooting : boolean ): void {
-    {
-        this.bullets.forEach(bullet => {
-            let bulletMesh = bullet.shape;
-            bulletMesh.position.add( bullet.velocity.three );
-
-            let bulletBody = bullet.body;
-            bulletBody.position.vadd( bullet.velocity.cannon );
-            
-            //Set every bullet to delete
-            // if ( bulletMesh.position.x > 30 ) bulletMesh.visible=false;
-            // if ( bulletMesh.position.x < -30 ) bulletMesh.visible=false;
-            // if ( bulletMesh.position.z > 30 ) bulletMesh.visible=false;
-            // if ( bulletMesh.position.z < -30 ) bulletMesh.visible=false;   
-        })
-
-        if (isShooting)
-        {
-            this.bulletIndex++
-            if (this.bulletIndex>=this.bullets.length) this.bulletIndex = 0
-
-            let body = this.bullets[this.bulletIndex].body
-            let x : number = 1
-            let y : number = 0
-            let z : number = 0
-
-            x+=.0002-.0004*Math.random()
-
-            body.velocity.set(x*15,y,z)
-            body.position.set(shootingObject.position.x+3,shootingObject.position.y+3,shootingObject.position.z)
-
-            // let mynew = new THREE.Vector3(body.position.x,body.position.y,body.position.z)
-            // let bulletMesh = this.bullets[this.bulletIndex].shape 
-            // bulletMesh.visible = true
-            // bulletMesh.position.copy(mynew)
-            }
-        }
-    }
     public update(delta:number, keysPressed:any) : void{
-        this.shoot(this.model, this.isShooting)
         const directionPressed = ['w','a','s','d'].some(key => keysPressed[key] == true)
         let play = ''
         if (directionPressed && this.toggleRun) {
             play = 'walk'
         } else if (directionPressed) {
             play = 'run.001' //walking
-        } else if(keysPressed.z==true){
-            this.isShooting = !this.isShooting
-        } else {
+        }  else {
             play = 'idle'
         }
         if (this.currentAction != play) {
@@ -124,4 +80,10 @@ export class Player extends Model{
         this.model.position.set(this.body.position.x,this.body.position.y-2,this.body.position.z)
     }
 
+    public getBullets() : bullet[] {
+        return this.bullets
+    }
+    public switchRunToggle() : void {
+        this.toggleRun = !this.toggleRun
+    }
 }
