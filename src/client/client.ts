@@ -8,13 +8,14 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { Player } from './classes/Player'
 import { DragonPatron } from './classes/DragonPatron'
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
-import getThreeApp from "./classes/App"
+import getThreeApp, { scene } from "./classes/App"
 import { Mutant } from './classes/Mutant'
 // @ts-ignore
 import Nebula, { SpriteRenderer } from 'three-nebula'
 // @ts-ignore
 import json from "./particles/blue.json"
 import { Color } from 'three'
+import { Model } from './classes/Model'
 
 
 // Scene, camera, renderer, world
@@ -37,8 +38,10 @@ let nebula : any
 const leavesMaterial : THREE.ShaderMaterial = shaderLeaves() //leaves
 
 
+
+
 // initLeaves()
-// initNebula()
+initNebula()
 initPlane() 
 initPlayer()
 initLight() 
@@ -51,21 +54,22 @@ initSky()
 
 
 window.addEventListener('click', (event) => {
-    player.shoot(app.scene, app.world)
+    player.shoot()
 })
 
 
 
-
+let removeBody:any;
+let bodi: any
 const clock = new THREE.Clock()
 function animate() : void {
-    
+    if(removeBody==1){
+        app.world.removeBody(bodi)
+    }
     const delta = clock.getDelta()
-    app.world.step(Math.min(delta, 0.1))
 	leavesMaterial.uniforms.time.value = clock.getElapsedTime()
     leavesMaterial.uniformsNeedUpdate = true
 
-    
 
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
@@ -78,15 +82,33 @@ function animate() : void {
         app.camera.position.x = player.getModel().position.x
         app.camera.lookAt(player.getModel().position)
         player.update(delta,keysPressed,mouseButtonsPressed) 
+
+        for (let index = 0; index < player.ballMeshes.length; index++) {
+            let body = player.balls[index]
+            let mesh = player.ballMeshes[index]
+            body.addEventListener("collide",(e:any)=>{
+                removeBody = 1
+                bodi=body
+                player.ballMeshes.splice(index,1)
+                player.balls.splice(index,1)
+                app.scene.remove(mesh)
+            })
+            app.world.addBody(body)
+            app.scene.add(mesh)
+        }
+
     }
-  
-    cannonDebugRenderer.update()
+
+    app.world.step(Math.min(delta, 0.1))
+    // cannonDebugRenderer.update()
     app.renderer.render(app.scene, app.camera)
     requestAnimationFrame(animate)
 }
 animate()
 
 //Things forgotten by the hand of god
+
+
 
 //Environment
 function initEnvironment() : void {
@@ -149,13 +171,14 @@ function initPlayer() : void {
 
 // Nebula
 function initNebula() : void {
-    Nebula.fromJSONAsync(json, THREE).then((loaded:any) => {
+    Nebula.fromJSONAsync(json, THREE).then((particle:any) => {
         const nebulaRenderer = new SpriteRenderer(app.scene, THREE)
-        loaded.emitters.forEach((a:any) => {
-            a.position.y = 4
+        if(player)player.particles=particle
+        // particle.emitters.forEach((a:any) => {
+        //     a.position.y = 4
             
-        })
-        nebula = loaded.addRenderer(nebulaRenderer);
+        // })
+        nebula = particle.addRenderer(nebulaRenderer);
     })
     
 }

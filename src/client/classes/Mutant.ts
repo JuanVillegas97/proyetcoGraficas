@@ -16,7 +16,7 @@ import { Vector2 } from 'three';
          ) {
             
          super(model,mixer,animationsMap,currentAction,body)
-         for(let i = 100; i<220; i+=10) {
+         for(let i = 110; i<220; i+=10) {
             this.search[i] = new THREE.Vector3(Math.cos(i * (Math.PI / 180)),0,Math.sin(i * (Math.PI / 180)));
             
          }
@@ -43,12 +43,12 @@ import { Vector2 } from 'three';
         this.search.forEach((direction) => {
             const far = 15
             const dampSpeed = .15
-            //scene.add(new THREE.ArrowHelper(this.raycaster.ray.direction, this.raycaster.ray.origin, far, 0xff0000) );
+            // scene.add(new THREE.ArrowHelper(this.raycaster.ray.direction, this.raycaster.ray.origin, far, 0xff0000) );
             const rayVec = new THREE.Vector3(this.model.position.x,this.model.position.y+2,this.model.position.z)
             this.raycaster.set((rayVec),direction);
             this.raycaster.far = far;
             const intersects = this.raycaster.intersectObjects(scene.children,false);
-            console.log(intersects?.[0]?.object?.name)
+            // console.log(intersects?.[0]?.object?.name)
             if (intersects?.[0]?.object.name==''){
                 this.model.position.x += direction.x*dampSpeed;
                 this.model.position.z += direction.z*dampSpeed;

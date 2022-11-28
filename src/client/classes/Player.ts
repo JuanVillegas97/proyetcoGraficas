@@ -4,28 +4,25 @@ import { Model } from './Model'
 import { Vec3 } from 'cannon-es'
 
 interface bullet { shape: THREE.Mesh, body:  CANNON.Body} 
-
+    // private bullets : bullet[]  = new Array(100).fill({
+    //     shape: new THREE.Mesh( new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({ color: 0x005ce6 })),
+    //     body: new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.2)}),
+    // })
 
 export class Player extends Model{
     private readonly fadeDuration : number = .2
     private readonly runVelocity : number = .4
     private readonly walkVelocity :number = .1
     private toggleRun: boolean = true
-    private isShooting: boolean = false
+    
     //animation binding
     private boundCastAttack1 = this.castAttack1.bind(this);
     private boundswitcShoot = this.shoot.bind(this)
     
-
-    private bullets : bullet[]  = new Array(100).fill({
-        shape: new THREE.Mesh( new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({ color: 0x005ce6 })),
-        body: new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.2)}),
-    })
-
-    private readonly shootVelocity : number = 15
-    private balls : CANNON.Body[]= []
-    private ballMeshes : THREE.Mesh[] = []
-
+    private readonly shootVelocity : number = 10
+    public balls : CANNON.Body[]= []
+    public ballMeshes : THREE.Mesh[] = []
+    public particles : any
 
     constructor(
         model: THREE.Group, 
@@ -37,7 +34,7 @@ export class Player extends Model{
         super(model,mixer,animationsMap,currentAction,body)
     }
 
-    public shoot(scene:THREE.Scene, world:CANNON.World){
+    public shoot(){
         const ballGeometry = new THREE.SphereGeometry(0.2)
         const ballBody = new CANNON.Body({ mass: .0001 })
         ballBody.addShape(new CANNON.Sphere(0.2))
@@ -46,8 +43,6 @@ export class Player extends Model{
         ballMesh.castShadow = true
         ballMesh.receiveShadow = true
     
-        world.addBody(ballBody)
-        scene.add(ballMesh)
 
         this.balls.push(ballBody)
         this.ballMeshes.push(ballMesh)
@@ -59,9 +54,9 @@ export class Player extends Model{
           0 * this.shootVelocity
         )
     
-        const x = this.model.position.x + 3
+        const x = this.model.position.x 
         const y = this.model.position.y + 3
-        const z = this.model.position.z + 3
+        const z = this.model.position.z + 1
         ballBody.position.set(x, y, z)
         ballMesh.position.set(ballBody.position.x,ballBody.position.y,ballBody.position.z)
     }
@@ -140,9 +135,7 @@ export class Player extends Model{
             this.ballMeshes[i].quaternion.set(this.balls[i].quaternion.x,this.balls[i].quaternion.y,this.balls[i].quaternion.z,this.balls[i].quaternion.w)
         }
     }
-    public getBullets() : bullet[] {
-        return this.bullets
-    }
+    
     public switchRunToggle() : void {
         this.toggleRun = !this.toggleRun
     }
