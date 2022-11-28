@@ -45,16 +45,14 @@ initPlayer()
 initLight() 
 initPlane() 
 
+
 const balls : CANNON.Body[]= []
 const ballMeshes : THREE.Mesh[] = []
 const shootVelocity = 5
 const ballShape = new CANNON.Sphere(0.2)
 const ballGeometry = new THREE.SphereGeometry(0.2)
 
-
 window.addEventListener('click', (event) => {
-    
-
     const ballBody = new CANNON.Body({ mass: .0001 })
     ballBody.addShape(ballShape)
     const ballMesh = new THREE.Mesh(ballGeometry, new THREE.MeshLambertMaterial({ color: 0xdddddd }))
@@ -74,12 +72,12 @@ window.addEventListener('click', (event) => {
       0 * shootVelocity
     )
 
-    // Move the ball outside the player sphere
     const x = player.getModel().position.x + 3
     const y = player.getModel().position.y + 3
     const z = player.getModel().position.z + 3
     ballBody.position.set(x, y, z)
     ballMesh.position.set(ballBody.position.x,ballBody.position.y,ballBody.position.z)
+
 })
 
 
