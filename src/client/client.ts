@@ -162,10 +162,10 @@ function initMutant():void {
         })
         const shape =  new CANNON.Cylinder(2, 2, 9, 12)
         const body = new CANNON.Body({ mass: 25, shape: shape})
-        body.position.y = 0
+        body.position.y = 1
         body.position.x = 15
         model.name = 'Mutant'
-        model.position.y= 0
+        model.position.y= 1
         model.position.x= 15
         model.rotateY(-1)
         model.scale.set(5,5,5)
