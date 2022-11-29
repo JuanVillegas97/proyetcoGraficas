@@ -50,6 +50,7 @@ initLight()
 initSky()
 
 
+  
 let removeBody:any;
 let bodi: any
 let meshi: any
@@ -66,7 +67,9 @@ function animate() : void {
 
     nebula ? nebula.update() : null
     dragon ? dragon.update(delta, player.getModel().position,player.getModel().rotation) : null
-    mutant ?  mutant.update(delta,app.scene,player.getModel()) : null;
+
+    // mutant ?  mutant.update(delta,app.scene,player.getModel()) : null;
+    
     cannonDebugRenderer.update()
 
     skyboxMesh ? skyboxMesh.position.copy( app.camera.position ):null
@@ -78,6 +81,7 @@ function animate() : void {
         player.update(delta,keysPressed,mouseButtonsPressed) 
 
         for (let index = 0; index < player.ballMeshes.length; index++) {
+            
             let body = player.balls[index]
             let mesh = player.ballMeshes[index]
             body.addEventListener("collide",(e:any)=>{
@@ -86,6 +90,11 @@ function animate() : void {
                 meshi=mesh
                 player.ballMeshes.splice(index,1)
                 player.balls.splice(index,1)
+                setTimeout(() => {
+                    player.particles.emitters.forEach((a:any) => {
+                        // a.dead=!a.dead
+                    })
+                }, 1000)  
             })
             app.world.addBody(body)
             app.scene.add(mesh)
@@ -99,7 +108,7 @@ function animate() : void {
     requestAnimationFrame(animate)
 }
 animate()
-
+    
 //Things forgotten by the hand of god
 // Player
 function initPlayer() : void {
@@ -353,14 +362,12 @@ function initDragon() : void {
         })
         const shape =  new CANNON.Cylinder(1, 1, .5, 12)
         const body = new CANNON.Body({ mass: 1, shape: shape})
-        body.position.y = -10
         model.name = 'DragonPatron'
         model.position.y= -10
         model.rotateY(1)
         model.scale.set(4,4,4)
         model.traverse((object: any)=>{if(object.isMesh) object.castShadow = true})
         app.scene.add(model)
-        app.world.addBody(body)
         dragon = new DragonPatron(model,mixer,animationMap,'Flying',body)
        // dragon.matrix = gltf.scene.matrix;
         }
@@ -401,22 +408,19 @@ document.addEventListener('keyup', (event) => {
 //Mouse listener
 const mouseButtonsPressed ={ }
 window.addEventListener('mousedown',(e)=>{
-    //0: left mouse
-    //1: mouse wheel down
-    //2: right mouse
-     (mouseButtonsPressed as any)[e.button.valueOf()] = true
-    //  if(e.button.valueOf() == 0) {
-    //    //do something
-    //  } else if (e.button.valueOf() == 2) {
-    //     //do something
-    //  }
+    let key = ''
+    if(e.button.valueOf()==0) key='left';
+    if(e.button.valueOf()==1) key='middle';
+    if(e.button.valueOf()==2) key='right';
+     (mouseButtonsPressed as any)[key] = true   
     e.preventDefault();
 })
 window.addEventListener('mouseup',(e)=>{
-    //0: left mouse
-    //1: mouse wheel down
-    //2: right mouse
-     (mouseButtonsPressed as any)[e.button.valueOf()] = false   
+    let key = ''
+    if(e.button.valueOf()==0) key='left';
+    if(e.button.valueOf()==1) key='middle';
+    if(e.button.valueOf()==2) key='right';
+     (mouseButtonsPressed as any)[key] = false   
     e.preventDefault();
     
 })
