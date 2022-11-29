@@ -2,7 +2,7 @@ import * as THREE from 'three'
  import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
  import { Model } from './Model'
  import * as CANNON from 'cannon-es'
-import { Vector2 } from 'three';
+import { MathUtils, Vector2 } from 'three';
 
  export class Mutant extends Model{
     private raycaster = new THREE.Raycaster();
@@ -41,23 +41,24 @@ import { Vector2 } from 'three';
 
      public raycastCheck(scene: THREE.Scene, playerModel:THREE.Group):void {
       // (A - B).magnitude < farDistance
+      const dampSpeed = .025
       const far = 15
       if( (this.model.position.distanceTo(playerModel.position) < far) ) {
+
          this.search.forEach((direction) => {
-            // const far = 15
-            const dampSpeed = .15
-            //scene.add(new THREE.ArrowHelper(this.raycaster.ray.direction, this.raycaster.ray.origin, far, 0xff0000) );
-            const rayVec = new THREE.Vector3(this.model.position.x,this.model.position.y+2,this.model.position.z)
-            this.raycaster.set((rayVec),direction);
-            this.raycaster.far = far;
-            const intersects = this.raycaster.intersectObjects(scene.children,false);
-            console.log(intersects?.[0]?.object?.name)
-            if (intersects?.[0]?.object.name==''){
-                this.model.position.x += direction.x*dampSpeed;
-                this.model.position.z += direction.z*dampSpeed;
+            const angleDeg = this.model.position.dot(playerModel.position)
+            // console.log(intersects?.[0]?.object?.name)
+            if ((100<=angleDeg && angleDeg<=220)) {
                 this.body.position.x += direction.x*dampSpeed;
                 this.body.position.z += direction.z*dampSpeed;
+                this.model.position.x += direction.x*dampSpeed;
+                this.model.position.z += direction.z*dampSpeed;
+                
             }
+         //    if (100<=angleDeg && angleDeg<=105) {
+         //       console.log("rotateY")
+         //       this.model.rotateY(.5)
+         //   }
         })
       } 
         
